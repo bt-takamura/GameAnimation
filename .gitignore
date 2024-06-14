@@ -2,3 +2,6 @@ GameAnimationSample.sln
 .vs/
 .vsconfig
 Binaries/
+Intermediate/
+Saved/
+Content/Characters/Echo/Textures/Head/T_Head_highpass_S.uasset
