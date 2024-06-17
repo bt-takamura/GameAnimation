@@ -5,3 +5,7 @@ Binaries/
 Intermediate/
 Saved/
 Content/Characters/Echo/Textures/Head/T_Head_highpass_S.uasset
+.idea/
+Plugins/SNPlugin/Document/
+Plugins/SNBullet/Document/Doxygen/html/_s_n_bullet_8cpp.html
+Plugins/SNBullet/Document/

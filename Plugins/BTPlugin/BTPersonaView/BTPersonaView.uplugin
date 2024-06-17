@@ -1,0 +1,36 @@
+{
+	"FileVersion": 3,
+	"Version": 1,
+	"VersionName": "1.0",
+	"FriendlyName": "BTPersonaView",
+	"Description": "アニメーションアセットエディタで表示されるペルソナシーン(キャラクターメッシュ表示画面)まわりの機能拡張プラグインです。",
+	"Category": "BeeTribe",
+	"CreatedBy": "BT.Masaki Okuda",
+	"CreatedByURL": "",
+	"DocsURL": "http://wordpress01.bee-tribe.local/program/?p=1098",
+	"MarketplaceURL": "",
+	"CanContainContent": false,
+	"IsBetaVersion": false,
+	"IsExperimentalVersion": false,
+	"Installed": false,
+	"EnabledByDefault": false,
+	"Modules": [
+		{
+			"Name": "BTPersonaView",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		},
+		{
+			"Name": "BTPersonaViewEditor",
+			"Type": "Editor",
+			"LoadingPhase": "Default"
+		}
+	],
+	"SupportURL": "",
+	"Plugins": [
+		{
+			"Name": "BTStd",
+			"Enabled": true
+		}
+	]
+}

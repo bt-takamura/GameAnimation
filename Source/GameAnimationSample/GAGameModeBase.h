@@ -3,14 +3,14 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/GameModeBase.h"
+#include "System/SNOnlineGameModeBase.h"
 #include "GAGameModeBase.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class GAMEANIMATIONSAMPLE_API AGAGameModeBase : public AGameModeBase
+class GAMEANIMATIONSAMPLE_API AGAGameModeBase : public ASNOnlineGameModeBase
 {
 	GENERATED_BODY()
 	

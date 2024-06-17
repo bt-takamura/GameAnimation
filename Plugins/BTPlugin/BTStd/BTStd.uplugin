@@ -1,0 +1,48 @@
+{
+	"FileVersion": 3,
+	"Version": 1,
+	"VersionName": "1.0",
+	"FriendlyName": "BT Std",
+	"Description": "",
+	"Category": "BeeTribe",
+	"CreatedBy": "",
+	"CreatedByURL": "",
+	"DocsURL": "http://wordpress01.bee-tribe.local/program/?p=847",
+	"MarketplaceURL": "",
+	"SupportURL": "",
+	"CanContainContent": false,
+	"EnabledByDefault": false,
+	"IsBetaVersion": true,
+	"IsExperimentalVersion": true,
+	"Installed": false,
+	"Modules": [
+		{
+			"Name": "BTStd",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		},
+		{
+			"Name": "BTStdEditor",
+			"Type": "Editor",
+			"LoadingPhase": "Default"
+		}
+	],
+	"Plugins": [
+		{
+			"Name": "Niagara",
+			"Enabled": true,
+			"WhitelistTargets": [
+				"Game",
+				"Editor"
+			]
+		},
+		{
+			"Name": "BTCore",
+			"Enabled": true,
+			"WhitelistTargets": [
+				"Game",
+				"Editor"
+			]
+		}
+	]
+}
