@@ -143,5 +143,11 @@ void USNAnimInstanceBase::JumpAnimationMontageSection(const FName& Name, const F
 	}
 }
 
+void USNAnimInstanceBase::BindMontageEndDelegate(FOnMontageEnded & InOnMontageEnded, UAnimMontage* Montage)
+{
+	Montage_SetEndDelegate(InOnMontageEnded, Montage);
+}
+
+
 
 

@@ -28,7 +28,7 @@ class SNPLUGIN_API ASNCharacterBase : public ACharacter
 
 public:
 	// Sets default values for this character's properties
-	ASNCharacterBase();
+	ASNCharacterBase(const FObjectInitializer& Initializer);
 	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;

@@ -14,6 +14,8 @@ public class GameAnimationSample : ModuleRules
 													"Engine", 
 													"InputCore", 
 													"SNPlugin",
+													"AnimGraphRuntime",
+													"MotionWarping",
 													"GameFeatures",
 												});
 

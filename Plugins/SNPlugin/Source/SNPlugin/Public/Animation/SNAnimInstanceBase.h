@@ -79,6 +79,8 @@ public:
 	//! @{@name ブレンドスペースのパラメータを設定
 	void SetBlendspaceParam(const FName& Key, const FVector& param);
 	//! @}
+
+	void BindMontageEndDelegate(FOnMontageEnded& InOnMontageEnded, UAnimMontage* Montage = nullptr);
 	
 private:
 	
