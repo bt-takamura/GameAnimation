@@ -6,6 +6,7 @@
 #include "Character/Base/SNCharacterBase.h"
 #include "GAPlayer.generated.h"
 
+class UChooserTable;
 class USpringArmComponent;
 class UMotionWarpingComponent;
 class UCameraComponent;
@@ -44,23 +45,23 @@ struct FGATraversalChooserParams
 public:
 	/** Please add a variable description */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta=(DisplayName="ActionType", MakeStructureDefaultValue="NewEnumerator0"))
-	TEnumAsByte<ETraversalActionType> ActionType;
+	TEnumAsByte<ETraversalActionType> ActionType = ETraversalActionType::None;
 
 	/** Please add a variable description */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta=(DisplayName="Gait"))
-	TEnumAsByte<EStride> Stride;
+	TEnumAsByte<EStride> Stride = EStride::Walk;
 
 	/** Please add a variable description */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta=(DisplayName="Speed", MakeStructureDefaultValue="0.000000"))
-	float Speed;
+	float Speed = 0.0f;
 
 	/** Please add a variable description */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta=(DisplayName="ObstacleHeight", MakeStructureDefaultValue="0.000000"))
-	float ObstacleHeight;
+	float ObstacleHeight = 0.0f;
 
 	/** Please add a variable description */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta=(DisplayName="ObstacleDepth", MakeStructureDefaultValue="0.000000"))
-	float ObstacleDepth;
+	float ObstacleDepth = 0.0f;
 };
 
 /** Please add a struct description */
@@ -71,51 +72,51 @@ struct FTraversalCheckResult
 public:
 	/** Please add a variable description */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta=(DisplayName="ActionType", MakeStructureDefaultValue="NewEnumerator0"))
-	TEnumAsByte<ETraversalActionType> ActionType;
+	TEnumAsByte<ETraversalActionType> ActionType = ETraversalActionType::None;
 
 	/** Please add a variable description */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta=(DisplayName="HasFrontLedge", MakeStructureDefaultValue="False"))
-	bool HasFrontLedge;
+	bool HasFrontLedge = false;
 
 	/** Please add a variable description */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta=(DisplayName="FrontLedgeLocation", MakeStructureDefaultValue="0.000000,0.000000,0.000000"))
-	FVector FrontLedgeLocation;
+	FVector FrontLedgeLocation = FVector::ZeroVector;;
 
 	/** Please add a variable description */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta=(DisplayName="FrontLedgeNormal", MakeStructureDefaultValue="0.000000,0.000000,0.000000"))
-	FVector FrontLedgeNormal;
+	FVector FrontLedgeNormal = FVector::ZeroVector;
 
 	/** Please add a variable description */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta=(DisplayName="HasBackLedge", MakeStructureDefaultValue="False"))
-	bool HasBackLedge;
+	bool HasBackLedge = false;
 
 	/** Please add a variable description */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta=(DisplayName="BackLedgeLocation", MakeStructureDefaultValue="0.000000,0.000000,0.000000"))
-	FVector BackLedgeLocation;
+	FVector BackLedgeLocation = FVector::ZeroVector;
 
 	/** Please add a variable description */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta=(DisplayName="BackLedgeNormal", MakeStructureDefaultValue="0.000000,0.000000,0.000000"))
-	FVector BackLedgeNormal;
+	FVector BackLedgeNormal = FVector::ZeroVector;
 
 	/** Please add a variable description */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta=(DisplayName="HasBackFloor", MakeStructureDefaultValue="False"))
-	bool HasBackFloor;
+	bool HasBackFloor = false;
 
 	/** Please add a variable description */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta=(DisplayName="BackFloorLocation", MakeStructureDefaultValue="0.000000,0.000000,0.000000"))
-	FVector BackFloorLocation;
+	FVector BackFloorLocation = FVector::ZeroVector;
 
 	/** Please add a variable description */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta=(DisplayName="ObstacleHeight", MakeStructureDefaultValue="0.000000"))
-	float ObstacleHeight;
+	float ObstacleHeight = 0.0f;
 
 	/** Please add a variable description */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta=(DisplayName="ObstacleDepth", MakeStructureDefaultValue="0.000000"))
-	float ObstacleDepth;
+	float ObstacleDepth = 0.0f;
 
 	/** Please add a variable description */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta=(DisplayName="BackLedgeHeight", MakeStructureDefaultValue="0.000000"))
-	float BackLedgeHeight;
+	float BackLedgeHeight = 0.0f;
 
 	/** Please add a variable description */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta=(DisplayName="HitComponent", MakeStructureDefaultValue="None"))
@@ -127,11 +128,11 @@ public:
 
 	/** Please add a variable description */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta=(DisplayName="StartTime", MakeStructureDefaultValue="0.000000"))
-	float StartTime;
+	float StartTime = 0.0f;
 
 	/** Please add a variable description */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta=(DisplayName="PlayRate", MakeStructureDefaultValue="0.000000"))
-	float PlayRate;
+	float PlayRate = 1.0f;
 };
 
 
@@ -143,23 +144,23 @@ struct FSimpleCameraParams
 public:
 	/** Please add a variable description */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta=(DisplayName="SpringArmLength", MakeStructureDefaultValue="300.000000"))
-	float SpringArmLength;
+	float SpringArmLength = 0.0f;
 
 	/** Please add a variable description */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta=(DisplayName="SocketOffset", MakeStructureDefaultValue="0.000000,0.000000,0.000000"))
-	FVector SocketOffset;
+	FVector SocketOffset = FVector::ZeroVector;
 
 	/** Please add a variable description */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta=(DisplayName="TranslationLagSpeed", MakeStructureDefaultValue="10.000000"))
-	float TranslationLagSpeed;
+	float TranslationLagSpeed = 0.0f;
 
 	/** Please add a variable description */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta=(DisplayName="FieldOfView", MakeStructureDefaultValue="90.000000"))
-	float FieldOfView;
+	float FieldOfView = 0.0f;
 
 	/** Please add a variable description */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta=(DisplayName="TransitionSpeed", MakeStructureDefaultValue="5.000000"))
-	float TransitionSpeed;
+	float TransitionSpeed = 0.0f;
 };
 
 /**
@@ -190,8 +191,20 @@ public:
 	UCameraComponent* GetCameraComponent();
 
 	UFUNCTION(BlueprintCallable, Category="GA|Traversal")
-	void ExecPerformTraversalAction();
+	void ExecTraversalAction(float TraceForwardDistance, bool& TraversalCheckFailed, bool& MontageSelectionFailed);
+	
+	UFUNCTION(BlueprintCallable, Category="GA|Traversal")
+	void ExecPerformTraversalAction(const FTraversalCheckResult& TraversalCheckResult);
 
+	UFUNCTION(BlueprintCallable, Category="GA|Traversal")
+	void UpdateWarpTarget();
+#if 1
+	UFUNCTION(BlueprintCallable, Category="GA|Traversal")
+	TArray<UObject*> EvaluateChooser(FTraversalCheckResult TraversalCheckResult);
+#endif
+	UFUNCTION(BlueprintCallable, Category="GA|Traversal")
+	bool PerformMotionMatch(TArray<UObject*> SearchAssets, FTraversalCheckResult TraversalCheckResult);
+	
 private:
 	UFUNCTION()
 	void EndPlayMontage(FName NotifyName);
@@ -288,4 +301,7 @@ public:
 	/** Please add a variable description */
 	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category="GA|Traversal")
 	bool bDoingTraversalAction;
+
+	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category="GA|Traversal")
+	TObjectPtr<UChooserTable> TraversalAnimationChooser = nullptr;
 };

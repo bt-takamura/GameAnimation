@@ -7,20 +7,26 @@ public class GameAnimationSample : ModuleRules
 	public GameAnimationSample(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
-	
+		
 		PublicDependencyModuleNames.AddRange(new string[] { 
 													"Core", 
 													"CoreUObject", 
 													"Engine", 
 													"InputCore", 
 													"SNPlugin",
-													"AnimGraphRuntime",
-													"MotionWarping",
 													"GameFeatures",
+													// ↓↓Animation制御用
+													"AnimGraphRuntime",
+													"AnimationWarpingRuntime",
+													"StructUtils",
+													"Chooser",
+													"PoseSearch",
+													"MotionWarping",
+													// ↑↑ここまで
 												});
-
+		
 		PrivateDependencyModuleNames.AddRange(new string[] {  });
-
+		
 		// Uncomment if you are using Slate UI
 		// PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore" });
 		
