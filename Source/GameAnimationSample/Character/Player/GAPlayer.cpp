@@ -12,9 +12,14 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "MotionWarping/Public/MotionWarpingComponent.h"
 #include "AnimationWarpingLibrary.h"
+#include "KismetAnimationLibrary.h"
+#include "Character/SNPlayerController.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "PoseSearch/PoseSearchLibrary.h"
 #include "Chooser/Public/ChooserFunctionLibrary.h"
+#include "GameAnimationSample/Environment/GALevelBlock.h"
+#include "Kismet/GameplayStatics.h"
+#include "Utility/SNUtility.h"
 
 AGAPlayer::AGAPlayer(const FObjectInitializer& Initializer):
 Super(Initializer)
@@ -29,6 +34,38 @@ Super(Initializer)
 
 	CameraComponent->SetupAttachment(SpringArmComponent);
 }
+
+void AGAPlayer::PossessedBy(AController* NewController)
+{
+	Super::PossessedBy(NewController);
+
+	UpdateCamera(false);
+}
+
+
+void AGAPlayer::BeginPlay()	
+{
+	Super::BeginPlay();
+
+	ASNPlayerController* PlayerController(SNUtility::GetPlayerController<ASNPlayerController>());
+
+	if(PlayerController != nullptr)
+	{
+		PlayerController->EnabledInputType(FName(TEXT("Normal")));
+	}
+}
+
+void AGAPlayer::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	UpdateMovement();
+
+	UpdateRotation();
+
+	UpdateCamera(true);
+}
+
 
 void AGAPlayer::SetEnableTraversalAction(bool bEnable)
 {
@@ -98,7 +135,278 @@ void AGAPlayer::ExecTraversalAction(float TraceForwardDistance, bool& TraversalC
 		return;
 	}
 }
-#if 1
+
+bool AGAPlayer::PerformFowardBlocks(FTraversalCheckResult& TraversalCheckResult, float TraceForwardDistance, int DrawDebugLegel, float DrawDebugDuration)
+{
+	FVector ActorLocation(GetActorLocation());
+
+	FVector ActorForwardVector(GetActorForwardVector());
+
+	FVector EndPoint(ActorLocation + ActorForwardVector * TraceForwardDistance);
+
+	EDrawDebugTrace::Type DebugTrace = (DrawDebugLegel >= 2) ? EDrawDebugTrace::ForDuration : EDrawDebugTrace::None;
+
+	FHitResult HitResult;
+
+	UKismetSystemLibrary::CapsuleTraceSingle(GetWorld(), ActorLocation, EndPoint, 30.0f, 60.0f, UEngineTypes::ConvertToTraceType(ECC_Visibility), false, TArray<AActor*>(), DebugTrace, HitResult, true);
+
+	bool Result = HitResult.bBlockingHit;
+	
+	if(Result == true)
+	{
+		AGALevelBlock* LevelBlock = Cast<AGALevelBlock>(HitResult.GetActor());
+
+		if(LevelBlock != nullptr)
+		{
+			TraversalCheckResult.HitComponent = HitResult.GetComponent();
+
+			LevelBlock->GetLedgeTransform(HitResult.ImpactPoint, ActorLocation, TraversalCheckResult);
+
+			DrawDebugShapesAtLedgeLocation(TraversalCheckResult, DrawDebugLegel, DrawDebugDuration);
+		} else
+		{
+			Result = false;
+		}
+	}
+
+	return Result;
+}
+
+void AGAPlayer::DrawDebugShapesAtLedgeLocation(const FTraversalCheckResult& TraversalCheckResult, int DrawDebugLevel, float DrawDebugDuration)
+{
+	if(DrawDebugLevel >= 1)
+	{
+		if(TraversalCheckResult.HasFrontLedge == true)
+		{
+			DrawDebugSphere(GetWorld(), TraversalCheckResult.FrontLedgeLocation, 10.0f, 12, FColor::Green, false, DrawDebugDuration);
+
+			DrawDebugSphere(GetWorld(), TraversalCheckResult.BackLedgeLocation, 10.0f, 12, FColor::Blue, false, DrawDebugDuration);
+		}
+	}
+}
+
+
+bool AGAPlayer::PerformDecisionOnActorToEachEdge(FTraversalCheckResult& TraversalCheckResult, int DrawDebugLegel)
+{
+	if(TraversalCheckResult.HasFrontLedge == false)
+	{
+		return false;
+	}
+
+	FVector FrontLedgeLocation(TraversalCheckResult.FrontLedgeLocation);
+	// コリジョンの半径を取得
+	float CapsuleRadius = GetCapsuleComponent()->GetScaledCapsuleRadius();
+	// コリジョンの高さの半分を取得
+	float CapsuleHalfHeight = GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
+	
+	FVector FrontLedgeNormalOffset(TraversalCheckResult.FrontLedgeNormal * (CapsuleRadius + 2.0f));
+
+	float HeightOffset = CapsuleHalfHeight + 2.0f;
+	// 障害物との空間チェック用の位置情報を算出
+	FVector HasRoomCheckFromLedgeLocation(FrontLedgeLocation + FrontLedgeNormalOffset + FVector(0.0f, 0.0f, HeightOffset));
+
+	bool Result = PerformActorToFrontEdge(TraversalCheckResult, HasRoomCheckFromLedgeLocation, DrawDebugLegel);
+
+	if(Result == false)
+	{
+		return false;
+	}
+
+	// BlockActorのスプラインから得た障害物の反対側のロケーション情報を取得
+	FVector BackLedgeLocation(TraversalCheckResult.BackLedgeLocation);
+	// 法線方向にコリジョンの半径分オフセットさせる
+	// @@ ここ何で+2.0何だろう…？障害物のその先に移動可能な場所があるかのチェックなら
+	//    Radius*2.0fでコリジョンの直径分の隙間があるかチェックしないといけないんでは？
+	FVector BackLedgeDepthOffset(TraversalCheckResult.BackLedgeNormal * (CapsuleRadius + 2.0f));
+	
+	FVector HasRoomCheckBackLedgeLocation(BackLedgeLocation + BackLedgeDepthOffset + FVector(0.0f, 0.0f , HeightOffset));
+	
+	PerformObstacleDepth(TraversalCheckResult, HasRoomCheckFromLedgeLocation, HasRoomCheckBackLedgeLocation, DrawDebugLegel);
+
+	PerformBackLedgeFloor(TraversalCheckResult, HasRoomCheckBackLedgeLocation, DrawDebugLegel);
+
+	return true;
+}
+
+
+//ステップ3.2: アクタの位置からフロントレッジの位置までトレースを行い、アクタが移動できるスペースがあるかどうかを判断します。移動できるスペースがある場合はファンクションを続行します。そうでない場合は早めに終了します。
+bool AGAPlayer::PerformActorToFrontEdge(FTraversalCheckResult& TraversalCheckResult, const FVector& HasRoomCheckFromLedgeLocation, int DrawDebugLegel)
+{
+	// コリジョンの半径を取得
+	float CapsuleRadius = GetCapsuleComponent()->GetScaledCapsuleRadius();
+	// コリジョンの高さの半分を取得
+	float CapsuleHalfHeight = GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
+
+	EDrawDebugTrace::Type DebugTrace = (DrawDebugLegel >= 3) ? EDrawDebugTrace::ForDuration : EDrawDebugTrace::None;
+	
+	FHitResult HitResult;
+
+	FVector ActorLocation(GetActorLocation());
+	
+	UKismetSystemLibrary::CapsuleTraceSingle(GetWorld(), ActorLocation, HasRoomCheckFromLedgeLocation, CapsuleRadius, CapsuleHalfHeight, UEngineTypes::ConvertToTraceType(ECC_Visibility), false, TArray<AActor*>(), DebugTrace, HitResult, true);
+
+	bool Result = ((HitResult.bBlockingHit == false) && (HitResult.bStartPenetrating == false)) ? true : false;
+	
+	if(Result == true)
+	{
+		TraversalCheckResult.ObstacleHeight = FMath::Abs(((ActorLocation - FVector(0.0f, 0.0f, CapsuleHalfHeight)) - TraversalCheckResult.FrontLedgeLocation).Z);
+	} else
+	{
+		TraversalCheckResult.HasFrontLedge = false;
+	}
+
+	return Result;
+}
+
+// ステップ3.4： 障害物の上を手前の棚から奥の棚までトレースし、アクターが移動できるスペースがあるか確認します。
+void AGAPlayer::PerformObstacleDepth(FTraversalCheckResult& TraversalCheckResult, const FVector& HasRoomCheckFrontLedgeLocation, const FVector& HasRoomCheckBackLedgeLocation, int DrawDebugLegel)
+{
+	// コリジョンの半径を取得
+	float CapsuleRadius = GetCapsuleComponent()->GetScaledCapsuleRadius();
+	// コリジョンの高さの半分を取得
+	float CapsuleHalfHeight = GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
+	
+	FHitResult HitResult;
+	
+	EDrawDebugTrace::Type DebugTrace = (DrawDebugLegel >= 3) ? EDrawDebugTrace::ForDuration : EDrawDebugTrace::None;
+	// 障害物の後ろに物があるかチェック
+	bool Result = UKismetSystemLibrary::CapsuleTraceSingle(GetWorld(), HasRoomCheckFrontLedgeLocation, HasRoomCheckBackLedgeLocation, CapsuleRadius, CapsuleHalfHeight, UEngineTypes::ConvertToTraceType(ECC_Visibility), false, TArray<AActor*>(), DebugTrace, HitResult, true);
+	
+	if(Result != true){
+		// ステップ3.5：もし余裕があれば、前後のレッジの位置の差を利用して障害物の深さを保存する。
+		// 物がない場合、ObstacleDepthに障害物の奥行(XY平面)を設定
+		TraversalCheckResult.ObstacleDepth = (TraversalCheckResult.FrontLedgeLocation - TraversalCheckResult.BackLedgeLocation).Size2D();
+	} else {
+		// ステップ3.5：もし余裕がなければ、前方のレッジとトレースインパクトポイントの差を使って障害物の深さを保存し、後方のレッジを無効にする。
+		// 奥に別の障害物がある場合はHasBackLedgeをfalseに設定
+		TraversalCheckResult.HasBackLedge = false;
+		// ObstacleDepthには奥にある障害物との距離(XY平面を設定
+		TraversalCheckResult.ObstacleDepth =  (HitResult.ImpactPoint - TraversalCheckResult.FrontLedgeLocation).Size2D();
+	}
+}
+
+//ステップ3.6 奥の棚の位置から下に向かってたどり、床を見つける（距離には障害物の高さを使う）。
+//もし床があれば、その位置と後方の棚の高さ(後方の棚から床までの距離を使用)を保存する。床が見つからなければ、後方の床を無効にする。
+void AGAPlayer::PerformBackLedgeFloor(FTraversalCheckResult& TraversalCheckResult, const FVector& HasRoomCheckBackLedgeLocation, int DrawDebugLegel)
+{
+	FVector BackLedgeLocation(TraversalCheckResult.BackLedgeLocation);
+
+	FVector BackLedgeNormal(TraversalCheckResult.BackLedgeNormal);
+
+	float CapsuleRadius = GetCapsuleComponent()->GetScaledCapsuleRadius();
+
+	float CapsuleHalfHeight = GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
+
+	float HeightOffset = TraversalCheckResult.ObstacleHeight - CapsuleHalfHeight + 50.0f;
+
+	FVector EndPoint((BackLedgeLocation + BackLedgeNormal * (CapsuleRadius + 2.0f)) - FVector(0.0f, 0.0f, HeightOffset));
+
+	FHitResult HitResult;
+
+	EDrawDebugTrace::Type DebugTrace = (DrawDebugLegel >= 3) ? EDrawDebugTrace::ForDuration : EDrawDebugTrace::None;
+	
+	UKismetSystemLibrary::CapsuleTraceSingle(GetWorld(), HasRoomCheckBackLedgeLocation, EndPoint, CapsuleRadius, CapsuleHalfHeight, UEngineTypes::ConvertToTraceType(ECC_Visibility), false, TArray<AActor*>(), DebugTrace, HitResult, true);
+
+	if(HitResult.bBlockingHit == true)
+	{
+		TraversalCheckResult.HasBackFloor = true;
+
+		TraversalCheckResult.BackFloorLocation = HitResult.ImpactPoint;
+
+		TraversalCheckResult.BackLedgeHeight = FMath::Abs((HitResult.ImpactPoint - TraversalCheckResult.BackLedgeLocation).Z);
+	} else
+	{
+		TraversalCheckResult.HasBackFloor = false;
+	}
+}
+
+void AGAPlayer::DetermineTraversalAction(FTraversalCheckResult& TraversalCheckResult)
+{
+	if((TraversalCheckResult.HasFrontLedge == true)
+	&& (TraversalCheckResult.HasBackLedge == true)
+	&& (TraversalCheckResult.HasBackFloor != true)
+	&& (UKismetMathLibrary::InRange_FloatFloat(TraversalCheckResult.ObstacleHeight, 50.0f, 125.0f))
+	&& (TraversalCheckResult.ObstacleDepth < 59.0f)
+	)
+	{
+		TraversalCheckResult.ActionType = ETraversalActionType::Vault;		
+	} else
+	if((TraversalCheckResult.HasFrontLedge == true)
+	&& (TraversalCheckResult.HasBackLedge == true)
+	&& (TraversalCheckResult.HasBackFloor == true)
+	&& (UKismetMathLibrary::InRange_FloatFloat(TraversalCheckResult.ObstacleHeight, 50.0f, 125.0f))
+	&& (TraversalCheckResult.ObstacleDepth < 59.0f)
+	&& (TraversalCheckResult.BackLedgeHeight > 50.0f)
+	)
+	{
+		TraversalCheckResult.ActionType = ETraversalActionType::Hurdle;
+	} else
+	if((TraversalCheckResult.HasFrontLedge == true)
+	&& (UKismetMathLibrary::InRange_FloatFloat(TraversalCheckResult.ObstacleHeight, 50.0f, 275.0f))
+	&& (TraversalCheckResult.ObstacleDepth >= 59.0f)
+	)
+	{
+		TraversalCheckResult.ActionType = ETraversalActionType::Mantle;
+	} else {
+		TraversalCheckResult.ActionType = ETraversalActionType::None;
+	}
+}
+
+void AGAPlayer::DebugPrintTraversalResult(int DrawDebugLevel, FTraversalCheckResult TraversalCheckResult)
+{
+	if(DrawDebugLevel >= 1)
+	{
+		FString Str(TEXT("Has Front Ledget : "));
+		
+		Str += (TraversalCheckResult.HasFrontLedge == true) ? TEXT("True") : TEXT("False");
+		
+		Str += "\n";
+		
+		Str += TEXT("Has Back Ledge : ");
+		
+		Str += (TraversalCheckResult.HasBackLedge == true) ? TEXT("True") : TEXT("False");
+		
+		Str += "\n";
+		
+		Str += TEXT("Has Back Floor : ");
+		
+		Str += (TraversalCheckResult.HasBackFloor == true) ? TEXT("True") : TEXT("False");
+		
+		Str += "\n";
+		
+		Str += TEXT("Obstacle Height :");
+		
+		Str += FString::SanitizeFloat(TraversalCheckResult.ObstacleHeight);
+		
+		Str += "\n";
+		
+		Str += TEXT("Obstacle Depth : ");
+		
+		Str += FString::SanitizeFloat(TraversalCheckResult.ObstacleDepth);
+		
+		Str += "\n";
+		
+		Str += TEXT("Back Ledge Height: ");
+		
+		Str += FString::SanitizeFloat(TraversalCheckResult.BackLedgeHeight);
+		
+		UKismetSystemLibrary::PrintString(GetWorld(), Str, true, false);
+		
+		FString CurrentAction(StaticEnum<ETraversalActionType>()->GetValueAsString(TraversalCheckResult.ActionType));
+		
+		UKismetSystemLibrary::PrintString(GetWorld(), CurrentAction, true, false);
+	}
+}
+
+//----------------------------------------------------------------------//
+//
+//! @brief トラバーサル・チェックの条件に一致するすべてのモンタージュを選択するために、チューザーを評価する。
+//
+//! @param TraversalCheckResult 
+//
+//! @retval 
+//
+//----------------------------------------------------------------------//
 TArray<UObject*> AGAPlayer::EvaluateChooser(FTraversalCheckResult TraversalCheckResult)
 {
 	FGATraversalChooserParams Params;
@@ -125,7 +433,7 @@ TArray<UObject*> AGAPlayer::EvaluateChooser(FTraversalCheckResult TraversalCheck
 
 	return Assets;
 }
-#endif
+
 bool AGAPlayer::PerformMotionMatch(TArray<UObject*> SearchAssets, FTraversalCheckResult TraversalCheckResult)
 {
 	USNAnimInstanceBase* AnimInstanceBase(Cast<USNAnimInstanceBase>(GetAnimInstance()));
@@ -291,6 +599,143 @@ void AGAPlayer::UpdateWarpTarget()
 		// BackFloorに関連付けているワープターゲットを削除
 		MotionWarpingComponent->RemoveWarpTarget(FName(TEXT("BackFloor")));
 	}
+}
+
+void AGAPlayer::UpdateMovement()
+{
+	GetCharacterMovement()->MaxWalkSpeed = CalculateMaxSpeed();
+
+	GetCharacterMovement()->MaxWalkSpeedCrouched = GetCharacterMovement()->MaxWalkSpeed;
+}
+
+void AGAPlayer::UpdateRotation()
+{
+	if(bWantsToStrafe == true)
+	{
+		GetCharacterMovement()->bUseControllerDesiredRotation = true;
+
+		GetCharacterMovement()->bOrientRotationToMovement = false;
+	} else
+	{
+		GetCharacterMovement()->bUseControllerDesiredRotation = false;
+
+		GetCharacterMovement()->bOrientRotationToMovement = true;
+	}
+
+	if(GetCharacterMovement()->IsFalling() == true)
+	{
+		GetCharacterMovement()->RotationRate = FRotator(0.0f, 200.0f, 0.0f);
+	} else
+	{
+		GetCharacterMovement()->RotationRate = FRotator(0.0f, -1.0f, 0.0f);
+	}
+}
+
+void AGAPlayer::UpdateCamera(bool bInterpolate)
+{
+	FSimpleCameraParams* CameraParams = nullptr;
+
+	if(bWantsToAim == true)
+	{
+		CameraParams = &CamStyleAim;
+	} else
+	{
+		CameraParams = &CamStyleClose;
+	}
+
+	if(bWantsToStrafe == false)
+	{
+		CameraParams =&CamStyleFar;
+	}
+
+	FSimpleCameraParams TargetCameraParams;
+
+	TargetCameraParams.SpringArmLength = CameraDistanceMag * CameraParams->SpringArmLength;
+	TargetCameraParams.SocketOffset = CameraDistanceMag * CameraParams->SocketOffset;
+	TargetCameraParams.FieldOfView = CameraParams->FieldOfView;
+	TargetCameraParams.TranslationLagSpeed = (bInterpolate == true) ? CameraParams->TranslationLagSpeed : -1.0f;
+	TargetCameraParams.TransitionSpeed = (bInterpolate == true) ? CameraParams->TransitionSpeed : -1.0f;
+
+	GetCameraComponent()->FieldOfView = UKismetMathLibrary::FInterpTo(GetCameraComponent()->FieldOfView, TargetCameraParams.FieldOfView, UGameplayStatics::GetWorldDeltaSeconds(GetWorld()), TargetCameraParams.TransitionSpeed);
+
+	GetSpringArmComponent()->TargetArmLength = UKismetMathLibrary::FInterpTo(GetSpringArmComponent()->TargetArmLength, TargetCameraParams.SpringArmLength, UGameplayStatics::GetWorldDeltaSeconds(GetWorld()), TargetCameraParams.TransitionSpeed);
+
+	GetSpringArmComponent()->CameraLagSpeed = UKismetMathLibrary::FInterpTo(GetSpringArmComponent()->CameraLagSpeed, TargetCameraParams.TranslationLagSpeed, UGameplayStatics::GetWorldDeltaSeconds(GetWorld()), TargetCameraParams.TransitionSpeed);
+
+	GetSpringArmComponent()->SocketOffset = UKismetMathLibrary::VInterpTo(GetSpringArmComponent()->SocketOffset, TargetCameraParams.SocketOffset, UGameplayStatics::GetWorldDeltaSeconds(GetWorld()), TargetCameraParams.TransitionSpeed);
+}
+
+
+float AGAPlayer::CalculateMaxSpeed()
+{
+	FVector Velocity(GetCharacterMovement()->Velocity);
+
+	float Direction = FMath::Abs(UKismetAnimationLibrary::CalculateDirection(Velocity, GetActorRotation()));
+	
+	float StafeSpeedMap = StrafeSpeedMapCurveObject->GetFloatValue(Direction);
+
+	FVector Speed(FVector::ZeroVector);
+
+	if(GetCharacterMovement()->IsCrouching() == true)
+	{
+		Speed = CrouchSpeed;
+	} else
+	{
+		switch(Stride)
+		{
+		case EStride::Walk: Speed = WalkSpeed; break;
+		case EStride::Run: Speed = RunSpeed; break;
+		case EStride::Sprint: Speed = SprintSpeed; break;
+		default: break;
+		}
+	}
+
+	float Result = 0.0f;
+	
+	if(StafeSpeedMap < 1.0f)
+	{
+		Result = UKismetMathLibrary::MapRangeClamped(StafeSpeedMap, 0.0f, 1.0f, Speed.X, Speed.Y);	
+	} else
+	{
+		Result = UKismetMathLibrary::MapRangeClamped(StafeSpeedMap, 1.0f, 2.0f, Speed.Y, Speed.Z);
+	}
+
+	return Result;
+}
+
+
+
+EStride AGAPlayer::GetDesiredStride() const
+{
+	return EStride::Run;
+}
+
+
+float AGAPlayer::GetTraversalForwardTraceDistance() const
+{
+	FVector Velocity(GetMovementComponent()->Velocity);
+
+	FVector Vector(UKismetMathLibrary::Quat_UnrotateVector(GetActorRotation().Quaternion(), Velocity));
+
+	float Result = UKismetMathLibrary::MapRangeClamped(Vector.X, 0.0f, 500.0f, 75.0f, 350.0f);
+
+	return Result;
+}
+
+FVector2D AGAPlayer::GetMovementInputScaleValue(const FVector2D& Input) const
+{
+	FVector2D PostNormal(Input.GetSafeNormal());
+
+	FVector2D Result(PostNormal);
+
+	switch(MovementStickMode)
+	{
+	case EAnalogueMovementBehavior::VariableSpeed_SingleStride:
+	case EAnalogueMovementBehavior::VariableSpeed_WalkRun: Result = Input; break;
+	default: break;
+	}
+
+	return Result;
 }
 
 

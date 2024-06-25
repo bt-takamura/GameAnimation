@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Character/Base/SNCharacterBase.h"
+#include "Character/Base/SNPlayerBase.h"
 #include "GAPlayer.generated.h"
 
 class UChooserTable;
@@ -167,7 +167,7 @@ public:
  * 
  */
 UCLASS(Blueprintable, BlueprintType)
-class GAMEANIMATIONSAMPLE_API AGAPlayer : public ASNCharacterBase
+class GAMEANIMATIONSAMPLE_API AGAPlayer : public ASNPlayerBase
 {
 	GENERATED_BODY()
 
@@ -192,6 +192,30 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category="GA|Traversal")
 	void ExecTraversalAction(float TraceForwardDistance, bool& TraversalCheckFailed, bool& MontageSelectionFailed);
+
+	UFUNCTION(BlueprintCallable, Category="GA|Traversal")
+	bool PerformFowardBlocks(UPARAM(ref) FTraversalCheckResult& TraversalCheckResult, float TraceForwardDistance, int DrawDebugLegel, float DrawDebugDuration);
+	
+	UFUNCTION(BlueprintCallable, Category="GA|Traversal")
+	bool PerformDecisionOnActorToEachEdge(UPARAM(ref) FTraversalCheckResult& TraversalCheckResult, int DrawDebugLegel);
+	
+	UFUNCTION(BlueprintCallable, Category="GA|Traversal")
+	bool PerformActorToFrontEdge(UPARAM(ref) FTraversalCheckResult& TraversalCheckResult, const FVector& HasRoomCheckFromLedgeLocation, int DrawDebugLegel);
+	
+	UFUNCTION(BlueprintCallable, Category="GA|Traversal")
+	void PerformObstacleDepth(UPARAM(ref) FTraversalCheckResult& TraversalCheckResult, const FVector& HasRoomCheckFrontLedgeLocation, const FVector& HasRoomCheckBackLedgeLocation, int DrawDebugLegel);
+		
+	UFUNCTION(BlueprintCallable, Category="GA|Traversal")
+	void PerformBackLedgeFloor(UPARAM(ref) FTraversalCheckResult& TraversalCheckResult, const FVector& HasRoomCheckBackLedgeLocation, int DrawDebugLegel);
+	
+	UFUNCTION(BlueprintCallable, Category="GA|Traversal")
+	void DetermineTraversalAction(UPARAM(ref) FTraversalCheckResult& TraversalCheckResult);
+
+	UFUNCTION(BlueprintCallable, Category="GA|Traversal")
+	void DrawDebugShapesAtLedgeLocation(const FTraversalCheckResult& TraversalCheckResult, int DrawDebugLevel, float DrawDebugDuration);
+	
+	UFUNCTION(BlueprintCallable, Category="GA|Traversal")
+	void DebugPrintTraversalResult(int DrawDebugLevel, FTraversalCheckResult TraversalCheckResult);
 	
 	UFUNCTION(BlueprintCallable, Category="GA|Traversal")
 	void ExecPerformTraversalAction(const FTraversalCheckResult& TraversalCheckResult);
@@ -204,6 +228,27 @@ public:
 #endif
 	UFUNCTION(BlueprintCallable, Category="GA|Traversal")
 	bool PerformMotionMatch(TArray<UObject*> SearchAssets, FTraversalCheckResult TraversalCheckResult);
+	
+	UFUNCTION(BlueprintCallable, Category="GA|Traversal", BlueprintPure)
+	float GetTraversalForwardTraceDistance() const ;
+
+	UFUNCTION(BlueprintCallable, Category="GA|Traversal", BlueprintPure)
+	FVector2D GetMovementInputScaleValue(const FVector2D& Input) const ;
+
+	UFUNCTION(BlueprintCallable, Category="GA|Traversal", BlueprintPure)
+	EStride GetDesiredStride() const ;
+	
+	UFUNCTION(BlueprintCallable, Category="GA|Traversal")
+	void UpdateMovement();
+
+	UFUNCTION(BlueprintCallable, Category="GA|Traversal")
+	void UpdateRotation();
+
+	UFUNCTION(BlueprintCallable, Category="GA|Traversal")
+	void UpdateCamera(bool bInterpolate);
+
+	UFUNCTION(BlueprintCallable, Category="GA|Traversal", BlueprintPure)
+	float CalculateMaxSpeed();
 	
 private:
 	UFUNCTION()
@@ -304,4 +349,12 @@ public:
 
 	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category="GA|Traversal")
 	TObjectPtr<UChooserTable> TraversalAnimationChooser = nullptr;
+
+protected:
+	virtual void BeginPlay() override;
+public:
+	
+	virtual void PossessedBy(AController* NewController) override;
+
+	virtual void Tick(float DeltaSeconds) override;
 };
