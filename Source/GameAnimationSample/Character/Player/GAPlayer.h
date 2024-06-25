@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Character/Base/SNPlayerBase.h"
+#include "GameAnimationSample/Character/Animation/GAMotionMatchingDef.h"
 #include "GAPlayer.generated.h"
 
 class UChooserTable;
@@ -11,31 +12,6 @@ class USpringArmComponent;
 class UMotionWarpingComponent;
 class UCameraComponent;
 
-UENUM(BlueprintType)
-enum EStride
-{
-	Walk UMETA(DisplayName = "Walk", ToopTip="Walk"),
-	Run UMETA(DisplayName = "Run", ToopTip="Run"),
-	Sprint UMETA(DisplayName = "Sprint", ToopTip="Sprint"),
-};
-
-UENUM(BlueprintType)
-enum EAnalogueMovementBehavior
-{
-	FixedSpeed_SingleStride UMETA(DisplayName = "Fixed Speed - Single Gait", ToopTip="Character will move at a fixed speed regardless of stick deflection."),
-	FixedSpeed_WalkRun UMETA(DisplayName = "Fixed Speed - Walk / Run", ToopTip="Character will move at a fixed walking speed with slight stick deflection, and a fixed running speed at full stick deflection."),
-	VariableSpeed_SingleStride UMETA(DisplayName = "Variable Speed - Single Gait", ToopTip="Full analog movement control with stick, character will remain walking or running based on gait input."),
-	VariableSpeed_WalkRun UMETA(DisplayName = "Variable Speed - Walk / Run", ToopTip="Full analog movement control with stick, character will switch from walk to run gait based on stick deflection."),
-};
-
-UENUM(BlueprintType)
-enum ETraversalActionType
-{
-	None UMETA(DisplayName = "None", ToopTip=""),
-	Hurdle UMETA(DisplayName = "Hurdle", ToopTip="Traverse over a thin object and end on the ground at a similar level (Low fence)"),
-	Vault UMETA(DisplayName = "Vault", ToopTip="Traverse over a thin object and end in a falling state (Tall fence, or elevated obstacle with no floor on the other side)"),
-	Mantle UMETA(DisplayName = "Mantle", ToopTip="Traverse up and onto an object without passing over it"),
-};
 
 /** Please add a struct description */
 USTRUCT(BlueprintType)

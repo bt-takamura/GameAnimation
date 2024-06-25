@@ -5,7 +5,6 @@
 
 #include "PlayMontageCallbackProxy.h"
 #include "SNDef.h"
-#include "Animation/SNAnimInstanceBase.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -17,6 +16,7 @@
 #include "Kismet/KismetMathLibrary.h"
 #include "PoseSearch/PoseSearchLibrary.h"
 #include "Chooser/Public/ChooserFunctionLibrary.h"
+#include "GameAnimationSample/Character/Animation/GAMotionMatchingAnimInstance.h"
 #include "GameAnimationSample/Environment/GALevelBlock.h"
 #include "Kismet/GameplayStatics.h"
 #include "Utility/SNUtility.h"
@@ -436,7 +436,7 @@ TArray<UObject*> AGAPlayer::EvaluateChooser(FTraversalCheckResult TraversalCheck
 
 bool AGAPlayer::PerformMotionMatch(TArray<UObject*> SearchAssets, FTraversalCheckResult TraversalCheckResult)
 {
-	USNAnimInstanceBase* AnimInstanceBase(Cast<USNAnimInstanceBase>(GetAnimInstance()));
+	UGAMotionMatchingAnimInstance* AnimInstanceBase(Cast<UGAMotionMatchingAnimInstance>(GetAnimInstance()));
 
 	if(AnimInstanceBase == nullptr)
 	{
@@ -631,72 +631,66 @@ void AGAPlayer::UpdateRotation()
 	}
 }
 
-void AGAPlayer::UpdateCamera(bool bInterpolate)
-{
+void AGAPlayer::UpdateCamera(bool bInterpolate){
+	
 	FSimpleCameraParams* CameraParams = nullptr;
-
-	if(bWantsToAim == true)
-	{
+	
+	if(bWantsToAim == true){
 		CameraParams = &CamStyleAim;
-	} else
-	{
+	} else {
 		CameraParams = &CamStyleClose;
 	}
-
-	if(bWantsToStrafe == false)
-	{
+	
+	if(bWantsToStrafe == false){
 		CameraParams =&CamStyleFar;
 	}
-
+	
 	FSimpleCameraParams TargetCameraParams;
-
+	
 	TargetCameraParams.SpringArmLength = CameraDistanceMag * CameraParams->SpringArmLength;
 	TargetCameraParams.SocketOffset = CameraDistanceMag * CameraParams->SocketOffset;
 	TargetCameraParams.FieldOfView = CameraParams->FieldOfView;
 	TargetCameraParams.TranslationLagSpeed = (bInterpolate == true) ? CameraParams->TranslationLagSpeed : -1.0f;
 	TargetCameraParams.TransitionSpeed = (bInterpolate == true) ? CameraParams->TransitionSpeed : -1.0f;
-
+	
 	GetCameraComponent()->FieldOfView = UKismetMathLibrary::FInterpTo(GetCameraComponent()->FieldOfView, TargetCameraParams.FieldOfView, UGameplayStatics::GetWorldDeltaSeconds(GetWorld()), TargetCameraParams.TransitionSpeed);
-
+	
 	GetSpringArmComponent()->TargetArmLength = UKismetMathLibrary::FInterpTo(GetSpringArmComponent()->TargetArmLength, TargetCameraParams.SpringArmLength, UGameplayStatics::GetWorldDeltaSeconds(GetWorld()), TargetCameraParams.TransitionSpeed);
-
+	
 	GetSpringArmComponent()->CameraLagSpeed = UKismetMathLibrary::FInterpTo(GetSpringArmComponent()->CameraLagSpeed, TargetCameraParams.TranslationLagSpeed, UGameplayStatics::GetWorldDeltaSeconds(GetWorld()), TargetCameraParams.TransitionSpeed);
-
+	
 	GetSpringArmComponent()->SocketOffset = UKismetMathLibrary::VInterpTo(GetSpringArmComponent()->SocketOffset, TargetCameraParams.SocketOffset, UGameplayStatics::GetWorldDeltaSeconds(GetWorld()), TargetCameraParams.TransitionSpeed);
 }
 
 
-float AGAPlayer::CalculateMaxSpeed()
-{
+float AGAPlayer::CalculateMaxSpeed(){
+	
 	FVector Velocity(GetCharacterMovement()->Velocity);
-
+	
 	float Direction = FMath::Abs(UKismetAnimationLibrary::CalculateDirection(Velocity, GetActorRotation()));
 	
 	float StafeSpeedMap = StrafeSpeedMapCurveObject->GetFloatValue(Direction);
-
+	
 	FVector Speed(FVector::ZeroVector);
-
+	
 	if(GetCharacterMovement()->IsCrouching() == true)
 	{
 		Speed = CrouchSpeed;
-	} else
-	{
+	} else {
 		switch(Stride)
 		{
-		case EStride::Walk: Speed = WalkSpeed; break;
-		case EStride::Run: Speed = RunSpeed; break;
-		case EStride::Sprint: Speed = SprintSpeed; break;
-		default: break;
+			case EStride::Walk:		Speed = WalkSpeed; break;
+			case EStride::Run:		Speed = RunSpeed; break;
+			case EStride::Sprint:	Speed = SprintSpeed; break;
+			default: break;
 		}
 	}
-
+	
 	float Result = 0.0f;
 	
-	if(StafeSpeedMap < 1.0f)
-	{
+	if(StafeSpeedMap < 1.0f){
 		Result = UKismetMathLibrary::MapRangeClamped(StafeSpeedMap, 0.0f, 1.0f, Speed.X, Speed.Y);	
-	} else
-	{
+	} else {
 		Result = UKismetMathLibrary::MapRangeClamped(StafeSpeedMap, 1.0f, 2.0f, Speed.Y, Speed.Z);
 	}
 
@@ -714,31 +708,28 @@ EStride AGAPlayer::GetDesiredStride() const
 float AGAPlayer::GetTraversalForwardTraceDistance() const
 {
 	FVector Velocity(GetMovementComponent()->Velocity);
-
+	
 	FVector Vector(UKismetMathLibrary::Quat_UnrotateVector(GetActorRotation().Quaternion(), Velocity));
-
+	
 	float Result = UKismetMathLibrary::MapRangeClamped(Vector.X, 0.0f, 500.0f, 75.0f, 350.0f);
-
+	
 	return Result;
 }
 
-FVector2D AGAPlayer::GetMovementInputScaleValue(const FVector2D& Input) const
-{
+FVector2D AGAPlayer::GetMovementInputScaleValue(const FVector2D& Input) const {
+	
 	FVector2D PostNormal(Input.GetSafeNormal());
-
+	
 	FVector2D Result(PostNormal);
-
-	switch(MovementStickMode)
-	{
-	case EAnalogueMovementBehavior::VariableSpeed_SingleStride:
-	case EAnalogueMovementBehavior::VariableSpeed_WalkRun: Result = Input; break;
-	default: break;
+	
+	switch(MovementStickMode){
+		case EAnalogueMovementBehavior::VariableSpeed_SingleStride:
+		case EAnalogueMovementBehavior::VariableSpeed_WalkRun:
+			Result = Input;
+			break;
+		default:
+			break;
 	}
-
+	
 	return Result;
 }
-
-
-
-
-
