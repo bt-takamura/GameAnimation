@@ -7,7 +7,7 @@
 #include "GAInterfactionTransform.generated.h"
 
 // This class does not need to be modified.
-UINTERFACE(MinimalAPI)
+UINTERFACE(NotBlueprintable)
 class UGAInterfactionTransform : public UInterface
 {
 	GENERATED_BODY()
@@ -23,7 +23,10 @@ class GAMEANIMATIONSAMPLE_API IGAInterfactionTransform
 	// Add interface functions to this class. This is the class that will be inherited to implement this interface.
 public:
 
-	virtual void SetInteractionTransform(const FTransform& Transform) = 0;
+	/** Please add a function description */
+	UFUNCTION(BlueprintCallable, meta=(BlueprintThreadSafe))
+	virtual void SetInteractTransform(const FTransform& InteractionTransform) = 0;
 
-	virtual const FTransform& GetInteractionTransform() const = 0;
+	UFUNCTION(BlueprintCallable, meta=(BlueprintThreadSafe))
+	virtual const FTransform& GetInteractTransform() const = 0;
 };

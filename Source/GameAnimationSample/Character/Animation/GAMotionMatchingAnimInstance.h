@@ -24,10 +24,15 @@ class GAMEANIMATIONSAMPLE_API UGAMotionMatchingAnimInstance : public UAnimInstan
 public:
 
 	UGAMotionMatchingAnimInstance();
-	
-	virtual void SetInteractionTransform(const FTransform& Transform) override;
 
-	virtual const FTransform& GetInteractionTransform() const override;
+	virtual void SetInteractTransform(const FTransform& InteractionTransform) override;
+
+	virtual const FTransform& GetInteractTransform() const override;
+	//UFUNCTION(BlueprintCallable, meta=(BlueprintThreadSafe))
+	//void SetInteractTransform(const FTransform& Transform) override ;
+	
+	//UFUNCTION(BlueprintCallable, meta=(BlueprintThreadSafe))
+	//const FTransform& GetInteractTransform() const override ;
 
 	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category="GA|EssentialValues")
 	FTransform CharacterTransform = FTransform::Identity;

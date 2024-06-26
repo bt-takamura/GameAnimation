@@ -15,12 +15,12 @@ UGAMotionMatchingAnimInstance::UGAMotionMatchingAnimInstance()
 	
 }
 
-void UGAMotionMatchingAnimInstance::SetInteractionTransform(const FTransform& Transform)
+void UGAMotionMatchingAnimInstance::SetInteractTransform(const FTransform& Transform)
 {
 	InteractionTransform = Transform;
 }
 
-const FTransform& UGAMotionMatchingAnimInstance::GetInteractionTransform() const
+const FTransform& UGAMotionMatchingAnimInstance::GetInteractTransform() const
 {
 	return InteractionTransform;
 }

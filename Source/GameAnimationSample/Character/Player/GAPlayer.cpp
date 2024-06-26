@@ -94,39 +94,17 @@ UCameraComponent* AGAPlayer::GetCameraComponent()
 
 void AGAPlayer::ExecTraversalAction(float TraceForwardDistance, bool& TraversalCheckFailed, bool& MontageSelectionFailed)
 {
-	
-	FVector ActorLocation(GetActorLocation());
-
-	FVector ActorForwardVector(GetActorForwardVector());
-
-	float CapsuleRadius = GetCapsuleComponent()->GetScaledCapsuleRadius();
-
-	float CapsuleHalfHeight = GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
-
 	int DrawDebugLevel = UKismetSystemLibrary::GetConsoleVariableIntValue(TEXT("DDCvar.Traversal.DrawDebugLevel"));
-
-	int DrawDebugDuration = UKismetSystemLibrary::GetConsoleVariableIntValue(TEXT("DDCvar.Traversal.DrawDebugDuration"));
-
-	FHitResult HitResult;
 	
-	UKismetSystemLibrary::CapsuleTraceSingle(
-		GetWorld(),
-		ActorLocation,
-		ActorLocation + ActorForwardVector * TraceForwardDistance,
-		30.0f,
-		60.0f,
-		UEngineTypes::ConvertToTraceType(ECC_Visibility),
-		false,
-		TArray<AActor*>(),
-		(DrawDebugLevel >= 2) ? EDrawDebugTrace::None : EDrawDebugTrace::ForDuration,
-		HitResult,
-		false,
-		FLinearColor::Black,
-		FLinearColor::Black,
-		DrawDebugDuration
-		);
-
-	if(HitResult.bBlockingHit == false)
+	int DrawDebugDuration = UKismetSystemLibrary::GetConsoleVariableIntValue(TEXT("DDCvar.Traversal.DrawDebugDuration"));
+	
+	FTraversalCheckResult TraversalCheckResult;
+	
+	memset(&TraversalCheckResult, 0, sizeof(FTraversalCheckResult));
+	
+	TraversalCheckResult.PlayRate = 1.0f;
+	
+	if(PerformFowardBlocks(TraversalCheckResult, TraceForwardDistance, DrawDebugLevel, DrawDebugDuration) == false)
 	{
 		TraversalCheckFailed = true;
 
@@ -134,41 +112,74 @@ void AGAPlayer::ExecTraversalAction(float TraceForwardDistance, bool& TraversalC
 
 		return;
 	}
+
+	if(PerformDecisionOnActorToEachEdge(TraversalCheckResult, DrawDebugLevel) == false)
+	{
+		TraversalCheckFailed = true;
+
+		MontageSelectionFailed = false;
+
+		return;
+	}
+
+	DetermineTraversalAction(TraversalCheckResult);
+
+	DebugPrintTraversalResult(DrawDebugLevel, TraversalCheckResult);
+
+	if(TraversalCheckResult.ActionType != ETraversalActionType::None)
+	{
+		SetInteractTransform(TraversalCheckResult);
+
+		TArray<UObject*> Assets(EvaluateChooser(TraversalCheckResult));
+
+		if(PerformMotionMatch(Assets, TraversalCheckResult) == false)
+		{
+			TraversalCheckFailed = false;
+			
+			MontageSelectionFailed = true;
+
+			return;
+		}
+	} else
+	{
+		TraversalCheckFailed = true;
+
+		MontageSelectionFailed = false;
+	}
 }
 
 bool AGAPlayer::PerformFowardBlocks(FTraversalCheckResult& TraversalCheckResult, float TraceForwardDistance, int DrawDebugLegel, float DrawDebugDuration)
 {
 	FVector ActorLocation(GetActorLocation());
-
+	
 	FVector ActorForwardVector(GetActorForwardVector());
-
+	
 	FVector EndPoint(ActorLocation + ActorForwardVector * TraceForwardDistance);
-
+	
 	EDrawDebugTrace::Type DebugTrace = (DrawDebugLegel >= 2) ? EDrawDebugTrace::ForDuration : EDrawDebugTrace::None;
-
+	
 	FHitResult HitResult;
-
-	UKismetSystemLibrary::CapsuleTraceSingle(GetWorld(), ActorLocation, EndPoint, 30.0f, 60.0f, UEngineTypes::ConvertToTraceType(ECC_Visibility), false, TArray<AActor*>(), DebugTrace, HitResult, true);
-
+	
+	UKismetSystemLibrary::CapsuleTraceSingle(GetWorld(), ActorLocation, EndPoint, 30.0f, 60.0f, UEngineTypes::ConvertToTraceType(ECC_Visibility), false, TArray<AActor*>(), DebugTrace, HitResult, true, FLinearColor::Black, FLinearColor::Yellow);
+	
 	bool Result = HitResult.bBlockingHit;
 	
-	if(Result == true)
-	{
+	if(Result == true){
+		
 		AGALevelBlock* LevelBlock = Cast<AGALevelBlock>(HitResult.GetActor());
-
-		if(LevelBlock != nullptr)
-		{
+		
+		if(LevelBlock != nullptr){
+			
 			TraversalCheckResult.HitComponent = HitResult.GetComponent();
-
+			
 			LevelBlock->GetLedgeTransform(HitResult.ImpactPoint, ActorLocation, TraversalCheckResult);
-
+			
 			DrawDebugShapesAtLedgeLocation(TraversalCheckResult, DrawDebugLegel, DrawDebugDuration);
-		} else
-		{
+		} else {
 			Result = false;
 		}
 	}
-
+	
 	return Result;
 }
 
@@ -222,9 +233,11 @@ bool AGAPlayer::PerformDecisionOnActorToEachEdge(FTraversalCheckResult& Traversa
 	FVector HasRoomCheckBackLedgeLocation(BackLedgeLocation + BackLedgeDepthOffset + FVector(0.0f, 0.0f , HeightOffset));
 	
 	PerformObstacleDepth(TraversalCheckResult, HasRoomCheckFromLedgeLocation, HasRoomCheckBackLedgeLocation, DrawDebugLegel);
-
-	PerformBackLedgeFloor(TraversalCheckResult, HasRoomCheckBackLedgeLocation, DrawDebugLegel);
-
+	
+	if(TraversalCheckResult.HasBackLedge == true){
+		PerformBackLedgeFloor(TraversalCheckResult, HasRoomCheckBackLedgeLocation, DrawDebugLegel);
+	}
+	
 	return true;
 }
 
@@ -352,7 +365,7 @@ void AGAPlayer::DetermineTraversalAction(FTraversalCheckResult& TraversalCheckRe
 	}
 }
 
-void AGAPlayer::DebugPrintTraversalResult(int DrawDebugLevel, FTraversalCheckResult TraversalCheckResult)
+void AGAPlayer::DebugPrintTraversalResult(int DrawDebugLevel, FTraversalCheckResult& TraversalCheckResult)
 {
 	if(DrawDebugLevel >= 1)
 	{
@@ -397,6 +410,24 @@ void AGAPlayer::DebugPrintTraversalResult(int DrawDebugLevel, FTraversalCheckRes
 		UKismetSystemLibrary::PrintString(GetWorld(), CurrentAction, true, false);
 	}
 }
+//Step 5.2: Send the front ledge location to the Anim BP using an interface. This transform will be used for a custom channel within the following Motion Matching search.
+void AGAPlayer::SetInteractTransform(FTraversalCheckResult& TraversalCheckResult)
+{
+	UGAMotionMatchingAnimInstance* AnimIntance(Cast<UGAMotionMatchingAnimInstance>(GetAnimInstance()));
+
+	if(AnimIntance == nullptr)
+	{
+		SNPLUGIN_LOG(TEXT("Animamtion Instance is nullptr."));
+
+		return;
+	}
+
+	FRotator Rotator(UKismetMathLibrary::MakeRotFromZ(TraversalCheckResult.FrontLedgeNormal));
+	
+	FTransform Transform(UKismetMathLibrary::MakeTransform(TraversalCheckResult.FrontLedgeLocation, Rotator));
+
+	AnimIntance->SetInteractTransform(Transform);
+}
 
 //----------------------------------------------------------------------//
 //
@@ -407,7 +438,7 @@ void AGAPlayer::DebugPrintTraversalResult(int DrawDebugLevel, FTraversalCheckRes
 //! @retval 
 //
 //----------------------------------------------------------------------//
-TArray<UObject*> AGAPlayer::EvaluateChooser(FTraversalCheckResult TraversalCheckResult)
+TArray<UObject*> AGAPlayer::EvaluateChooser(FTraversalCheckResult& TraversalCheckResult)
 {
 	FGATraversalChooserParams Params;
 	// 現状のプレイヤーのアクションを設定
@@ -434,7 +465,7 @@ TArray<UObject*> AGAPlayer::EvaluateChooser(FTraversalCheckResult TraversalCheck
 	return Assets;
 }
 
-bool AGAPlayer::PerformMotionMatch(TArray<UObject*> SearchAssets, FTraversalCheckResult TraversalCheckResult)
+bool AGAPlayer::PerformMotionMatch(TArray<UObject*> SearchAssets, FTraversalCheckResult& TraversalCheckResult)
 {
 	UGAMotionMatchingAnimInstance* AnimInstanceBase(Cast<UGAMotionMatchingAnimInstance>(GetAnimInstance()));
 

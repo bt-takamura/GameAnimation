@@ -191,7 +191,7 @@ public:
 	void DrawDebugShapesAtLedgeLocation(const FTraversalCheckResult& TraversalCheckResult, int DrawDebugLevel, float DrawDebugDuration);
 	
 	UFUNCTION(BlueprintCallable, Category="GA|Traversal")
-	void DebugPrintTraversalResult(int DrawDebugLevel, FTraversalCheckResult TraversalCheckResult);
+	void DebugPrintTraversalResult(int DrawDebugLevel,UPARAM(ref) FTraversalCheckResult& TraversalCheckResult);
 	
 	UFUNCTION(BlueprintCallable, Category="GA|Traversal")
 	void ExecPerformTraversalAction(const FTraversalCheckResult& TraversalCheckResult);
@@ -200,10 +200,10 @@ public:
 	void UpdateWarpTarget();
 #if 1
 	UFUNCTION(BlueprintCallable, Category="GA|Traversal")
-	TArray<UObject*> EvaluateChooser(FTraversalCheckResult TraversalCheckResult);
+	TArray<UObject*> EvaluateChooser(UPARAM(ref) FTraversalCheckResult& TraversalCheckResult);
 #endif
 	UFUNCTION(BlueprintCallable, Category="GA|Traversal")
-	bool PerformMotionMatch(TArray<UObject*> SearchAssets, FTraversalCheckResult TraversalCheckResult);
+	bool PerformMotionMatch(TArray<UObject*> SearchAssets, UPARAM(ref) FTraversalCheckResult& TraversalCheckResult);
 	
 	UFUNCTION(BlueprintCallable, Category="GA|Traversal", BlueprintPure)
 	float GetTraversalForwardTraceDistance() const ;
@@ -225,6 +225,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category="GA|Traversal", BlueprintPure)
 	float CalculateMaxSpeed();
+
+	UFUNCTION(BlueprintCallable, Category="GA|Traversal")
+	void SetInteractTransform(UPARAM(ref) FTraversalCheckResult& TraversalCheckResult);
 	
 private:
 	UFUNCTION()
