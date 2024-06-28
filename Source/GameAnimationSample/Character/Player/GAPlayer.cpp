@@ -495,6 +495,16 @@ bool AGAPlayer::PerformMotionMatch(TArray<UObject*> SearchAssets, FTraversalChec
 	TraversalCheckResult.StartTime = Result.SelectedTime;
 
 	TraversalCheckResult.PlayRate = Result.WantedPlayRate;
+
+	FString Str(TEXT("Start Time : "));
+
+	Str += FString::SanitizeFloat(TraversalCheckResult.StartTime);
+
+	Str += " / ";
+
+	Str += FString::SanitizeFloat(TraversalCheckResult.StartTime);
+
+	UKismetSystemLibrary::PrintString(GetWorld(), Str, true, false);
 	// トラバーサルを実行
 	ExecPerformTraversalAction(TraversalCheckResult);
 
@@ -505,6 +515,8 @@ bool AGAPlayer::PerformMotionMatch(TArray<UObject*> SearchAssets, FTraversalChec
 void AGAPlayer::ExecPerformTraversalAction(const FTraversalCheckResult& TraversalCheckResult)
 {
 	TraversalResult = TraversalCheckResult;
+
+	DrawDebugSphere(GetWorld(), TraversalResult.FrontLedgeLocation, 10.0f, 12, FColor::Green, false, 30);
 	// ワープターゲットを更新
 	UpdateWarpTarget();
 	// パルクール用のモンタージュを再生
@@ -556,6 +568,7 @@ void AGAPlayer::EndPlayMontage(FName )
 
 void AGAPlayer::UpdateWarpTarget()
 {
+	
 	FVector FrontLedgeLocation(TraversalResult.FrontLedgeLocation);
 	
 	FVector FrontLedgeNormal(TraversalResult.FrontLedgeNormal);
