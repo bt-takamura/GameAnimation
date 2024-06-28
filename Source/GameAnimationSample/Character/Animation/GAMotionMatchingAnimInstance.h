@@ -9,6 +9,8 @@
 #include "Animation/AnimInstance.h"
 #include "GAMotionMatchingAnimInstance.generated.h"
 
+class AGAPlayer;
+class UCharacterMovementComponent;
 struct FPoseSearchTrajectory_WorldCollisionResults;
 struct FPoseSearchQueryTrajectory;
 struct FPoseSearchTrajectoryData;
@@ -25,6 +27,12 @@ public:
 
 	UGAMotionMatchingAnimInstance();
 
+	UFUNCTION(BlueprintCallable, Category="GA|Animation|MotionMatching", meta=(BlueprintThreadSafe))
+	void UpdateState();
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category="GA|Animation|MotionMatching", meta=(BlueprintThreadSafe))
+	bool ShouldSpinTransition();
+	
 	virtual void SetInteractTransform(const FTransform& InteractionTransform) override;
 
 	virtual const FTransform& GetInteractTransform() const override;
@@ -34,6 +42,12 @@ public:
 	//UFUNCTION(BlueprintCallable, meta=(BlueprintThreadSafe))
 	//const FTransform& GetInteractTransform() const override ;
 
+	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category="GA|Refarence")
+	AGAPlayer* OwnerCharacter;
+
+	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category="GA|Refarence")
+	UCharacterMovementComponent* OwnerMovementComponent;
+	
 	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category="GA|EssentialValues")
 	FTransform CharacterTransform = FTransform::Identity;
 
