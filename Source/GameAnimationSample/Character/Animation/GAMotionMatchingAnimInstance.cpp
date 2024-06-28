@@ -3,6 +3,8 @@
 
 #include "GameAnimationSample/Character/Animation/GAMotionMatchingAnimInstance.h"
 
+#include "Chooser.h"
+#include "ChooserFunctionLibrary.h"
 #include "SNDef.h"
 #include "GameAnimationSample/Character/Player/GAPlayer.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -29,26 +31,139 @@ const FTransform& UGAMotionMatchingAnimInstance::GetInteractTransform() const
 	return InteractionTransform;
 }
 
-bool UGAMotionMatchingAnimInstance::ShouldSpinTransition()
+bool UGAMotionMatchingAnimInstance::ShouldSpinTransition() const 
 {
 	FRotator DeltaRotator(UKismetMathLibrary::NormalizedDeltaRotator(CharacterTransform.Rotator(), RootTransform.Rotator()));
+	
+	if((FMath::Abs(DeltaRotator.Yaw) >= 130.0f)
+	&& (Speed2D >= 150.0f)
+	&& (CurrentDatabaseTags.Contains(TEXT("Pivots")))){
+		return true;
+	}
+	
+	return false;
+}
 
-	bool Result = false;
-
-	if((MovementState == EMotionMatchingMovementState::Idle)
-	&& (MovementStateLastFrame == EMotionMatchingMovementState::Moving))
+bool UGAMotionMatchingAnimInstance::SholdTurnInPlace() const
+{
+	if(OwnerCharacter == nullptr)
 	{
-		if(OwnerCharacter->bWantsToAim)
-		{
-			if(DeltaRotator.Yaw >= 50.0f)
-			{
-				Result = true;
-			}
+		SNPLUGIN_ERROR(TEXT("Owner Character is nullptr."));
+		
+		return false;
+	}
+	
+	bool Result = false;
+	// 止まった瞬間かチェック(MovementStateがIdleに変わった瞬間)
+	bool bStopTrigger = ((MovementState == EMotionMatchingMovementState::Idle) && (MovementStateLastFrame == EMotionMatchingMovementState::Moving));
+	
+	if((bStopTrigger == true) || (OwnerCharacter->bWantsToAim == true)){
+		
+		FRotator DeltaRotator(UKismetMathLibrary::NormalizedDeltaRotator(CharacterTransform.Rotator(), RootTransform.Rotator()));
+		
+		if(FMath::Abs(DeltaRotator.Yaw) >= 50.0f){
+			Result = true;
 		}
 	}
+	
+	return true;
+}
 
+bool UGAMotionMatchingAnimInstance::JustLandedLight() const
+{
+	if(OwnerCharacter == nullptr)
+	{
+		SNPLUGIN_ERROR(TEXT("Owner Character is nullptr."));
+		
+		return false;
+	}
+	
+	if((OwnerCharacter->bJustLanded == true)
+	&& (FMath::Abs(OwnerCharacter->LandSpeed.Z) < FMath::Abs(HeavyLandSpeedThreshold)))
+	{
+		return true;
+	}
+
+	return false;
+}
+
+bool UGAMotionMatchingAnimInstance::JustLandedHeavy() const
+{
+	if(OwnerCharacter == nullptr)
+	{
+		SNPLUGIN_ERROR(TEXT("Owner Character is nullptr."));
+		
+		return false;
+	}
+	
+	if((OwnerCharacter->bJustLanded == true)
+	&& (FMath::Abs(OwnerCharacter->LandSpeed.Z) >= FMath::Abs(HeavyLandSpeedThreshold)))
+	{
+		return true;
+	}
+
+	return false;
+}
+
+bool UGAMotionMatchingAnimInstance::JustTraversed() const
+{
+	if((IsSlotActive(FName(TEXT("DefaultSlot"))) != true)
+	&& (GetCurveValue(FName(TEXT("MovingTraversal"))) > 0.0))
+	{
+		return true;
+	}
+	
+	return false;
+}
+
+float UGAMotionMatchingAnimInstance::GetOffsetRootTranslationHalfLife() const
+{
+	if(MovementState == EMotionMatchingMovementState::Idle)
+	{
+		return 0.1f;
+	} else
+	{
+		return 0.2f;
+	}
+}
+
+void UGAMotionMatchingAnimInstance::UpdateMotionMatching(FAnimationUpdateContext* Context, FAnimNodeReference* Node)
+{
+	
+}
+
+float UGAMotionMatchingAnimInstance::GetMotionMatchingBlendTime() const
+{
+	float Result = 0.0f;
+	
 	return Result;
 }
+
+
+EPoseSearchInterruptMode UGAMotionMatchingAnimInstance::GetMotionMatchingInterruptMode() const
+{
+	bool bStateChanged = ((MovementState != MovementStateLastFrame)
+		||(Stride != StrideLastFrame)
+		||(Stance != StanceLastFrame));
+	
+	if((((bStateChanged == true) && (MovementMode == EMotionMatchingMovementMode::OnGround)))
+		|| (MovementMode != MovementModeLastFrame))
+	{
+		return EPoseSearchInterruptMode::InterruptOnDatabaseChange;
+	} else
+	{
+		return EPoseSearchInterruptMode::DoNotInterrupt;
+	}
+	
+}
+
+bool UGAMotionMatchingAnimInstance::EnableSteering() const
+{
+	return ((MovementState == EMotionMatchingMovementState::Moving) || (MovementMode  == EMotionMatchingMovementMode::InAir));
+}
+
+
+
 
 void UGAMotionMatchingAnimInstance::UpdateState()
 {

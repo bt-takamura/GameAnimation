@@ -7,6 +7,7 @@
 #include "GAInterfactionTransform.h"
 #include "InstancedStruct.h"
 #include "Animation/AnimInstance.h"
+#include "PoseSearch/PoseSearchLibrary.h"
 #include "GAMotionMatchingAnimInstance.generated.h"
 
 class AGAPlayer;
@@ -30,8 +31,35 @@ public:
 	UFUNCTION(BlueprintCallable, Category="GA|Animation|MotionMatching", meta=(BlueprintThreadSafe))
 	void UpdateState();
 
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category="GA|Animation|MotionMatching|MovementAnalysis", meta=(BlueprintThreadSafe))
+	bool ShouldSpinTransition() const ;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category="GA|Animation|MotionMatching|MovementAnalysis", meta=(BlueprintThreadSafe))
+	bool SholdTurnInPlace() const ;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category="GA|Animation|MotionMatching|MovementAnalysis", meta=(BlueprintThreadSafe))
+	bool JustLandedLight() const ;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category="GA|Animation|MotionMatching|MovementAnalysis", meta=(BlueprintThreadSafe))
+	bool JustLandedHeavy() const ;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category="GA|Animation|MotionMatching|MovementAnalysis", meta=(BlueprintThreadSafe))
+	bool JustTraversed() const ;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category="GA|Animation|MotionMatching|RootOffset", meta=(BlueprintThreadSafe))
+	float GetOffsetRootTranslationHalfLife() const ;
+
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category="GA|Animation|MotionMatching", meta=(BlueprintThreadSafe))
-	bool ShouldSpinTransition();
+	void UpdateMotionMatching(FAnimationUpdateContext* Context, FAnimNodeReference* Node);
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category="GA|Animation|MotionMatching", meta=(BlueprintThreadSafe))
+	float GetMotionMatchingBlendTime() const ;
+	
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category="GA|Animation|MotionMatching", meta=(BlueprintThreadSafe))
+	EPoseSearchInterruptMode GetMotionMatchingInterruptMode() const ;
+	
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category="GA|Animation|MotionMatching|Steering", meta=(BlueprintThreadSafe))
+	bool EnableSteering() const ;
 	
 	virtual void SetInteractTransform(const FTransform& InteractionTransform) override;
 
