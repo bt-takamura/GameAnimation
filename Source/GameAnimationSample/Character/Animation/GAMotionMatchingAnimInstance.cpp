@@ -127,10 +127,10 @@ float UGAMotionMatchingAnimInstance::GetOffsetRootTranslationHalfLife() const
 	}
 }
 
-void UGAMotionMatchingAnimInstance::UpdateMotionMatching(FAnimationUpdateContext* Context, FAnimNodeReference* Node)
-{
-	
-}
+//void UGAMotionMatchingAnimInstance::UpdateMotionMatching(FAnimationUpdateContext& Context, FAnimNodeReference& Node)
+//{
+//	
+//}
 
 float UGAMotionMatchingAnimInstance::GetMotionMatchingBlendTime() const
 {

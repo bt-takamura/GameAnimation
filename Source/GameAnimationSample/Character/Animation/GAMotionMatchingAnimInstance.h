@@ -7,6 +7,7 @@
 #include "GAInterfactionTransform.h"
 #include "InstancedStruct.h"
 #include "Animation/AnimInstance.h"
+#include "Animation/AnimNodeBase.h"
 #include "PoseSearch/PoseSearchLibrary.h"
 #include "GAMotionMatchingAnimInstance.generated.h"
 
@@ -49,8 +50,8 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category="GA|Animation|MotionMatching|RootOffset", meta=(BlueprintThreadSafe))
 	float GetOffsetRootTranslationHalfLife() const ;
 
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category="GA|Animation|MotionMatching", meta=(BlueprintThreadSafe))
-	void UpdateMotionMatching(FAnimationUpdateContext* Context, FAnimNodeReference* Node);
+	//UFUNCTION(BlueprintCallable, BlueprintPure, Category="GA|Animation|MotionMatching", meta=(BlueprintThreadSafe))
+	//void UpdateMotionMatching(const FAnimationUpdateContext& Context, FAnimNodeReference& Node);
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category="GA|Animation|MotionMatching", meta=(BlueprintThreadSafe))
 	float GetMotionMatchingBlendTime() const ;
