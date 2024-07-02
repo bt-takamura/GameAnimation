@@ -13,10 +13,6 @@
 
 UGAMotionMatchingAnimInstance::UGAMotionMatchingAnimInstance()
 :Super()
-,TrajectoryGenerationDataIdle(FPoseSearchTrajectoryData::StaticStruct())
-,TrajectoryGenerationDataMoving(FPoseSearchTrajectoryData::StaticStruct())
-,Trajectory(FPoseSearchQueryTrajectory::StaticStruct())
-,TrajectoryCollision(FPoseSearchTrajectory_WorldCollisionResults::StaticStruct())
 {
 	
 }
@@ -139,6 +135,20 @@ float UGAMotionMatchingAnimInstance::GetMotionMatchingBlendTime() const
 	return Result;
 }
 
+FVector2D UGAMotionMatchingAnimInstance::GetAOValue() const
+{
+	if(OwnerCharacter == nullptr)
+	{
+		return FVector2D::ZeroVector;
+	}
+
+	FRotator CharacterRotate(OwnerCharacter->GetControlRotation());
+
+	FRotator Normalized(UKismetMathLibrary::NormalizedDeltaRotator(CharacterRotate, RootTransform.Rotator()));
+
+	return FVector2D(Normalized.Yaw, Normalized.Pitch);
+}
+
 
 EPoseSearchInterruptMode UGAMotionMatchingAnimInstance::GetMotionMatchingInterruptMode() const
 {
@@ -162,8 +172,14 @@ bool UGAMotionMatchingAnimInstance::EnableSteering() const
 	return ((MovementState == EMotionMatchingMovementState::Moving) || (MovementMode  == EMotionMatchingMovementMode::InAir));
 }
 
+FQuat UGAMotionMatchingAnimInstance::GetTrajectoryFacing() const
+{
+	FPoseSearchQueryTrajectorySample TrajectorySample;
+	
+	UPoseSearchTrajectoryLibrary::GetTrajectorySampleAtTime(Trajectory, 0.5f, TrajectorySample);
 
-
+	return TrajectorySample.Facing;
+}
 
 void UGAMotionMatchingAnimInstance::UpdateState()
 {

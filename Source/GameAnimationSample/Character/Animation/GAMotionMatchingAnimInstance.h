@@ -55,12 +55,18 @@ public:
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category="GA|Animation|MotionMatching", meta=(BlueprintThreadSafe))
 	float GetMotionMatchingBlendTime() const ;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category="GA|Animation|MotionMatching|Aim Offset", meta=(BlueprintThreadSafe))
+	FVector2D GetAOValue() const ;
 	
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category="GA|Animation|MotionMatching", meta=(BlueprintThreadSafe))
 	EPoseSearchInterruptMode GetMotionMatchingInterruptMode() const ;
 	
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category="GA|Animation|MotionMatching|Steering", meta=(BlueprintThreadSafe))
 	bool EnableSteering() const ;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category="GA|Animation|MotionMatching|Steering", meta=(BlueprintThreadSafe))
+	FQuat GetTrajectoryFacing() const ;
 	
 	virtual void SetInteractTransform(const FTransform& InteractionTransform) override;
 
@@ -159,16 +165,16 @@ public:
 	TEnumAsByte<EMotionMatchingStance> StanceLastFrame = EMotionMatchingStance::Stand;
 
 	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category="GA|Trajectory")
-	FInstancedStruct TrajectoryGenerationDataIdle;
+	FPoseSearchTrajectoryData TrajectoryGenerationDataIdle;
 
 	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category="GA|Trajectory")
-	FInstancedStruct TrajectoryGenerationDataMoving;
+	FPoseSearchTrajectoryData TrajectoryGenerationDataMoving;
 
 	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category="GA|Trajectory")
-	FInstancedStruct Trajectory;
+	FPoseSearchQueryTrajectory Trajectory;
 
 	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category="GA|Trajectory")
-	FInstancedStruct TrajectoryCollision;
+	FPoseSearchTrajectory_WorldCollisionResults TrajectoryCollision;
 
 	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category="GA|Trajectory")
 	float PreviousDesiredControllerYaw = 0.0f;
