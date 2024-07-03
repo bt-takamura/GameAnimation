@@ -5,7 +5,8 @@
 #include "CoreMinimal.h"
 #include "GAMotionMatchingDef.h"
 #include "GAInterfactionTransform.h"
-#include "InstancedStruct.h"
+#include "BoneControllers/AnimNode_OffsetRootBone.h"
+#include "BoneControllers/AnimNode_OrientationWarping.h"
 #include "Animation/AnimInstance.h"
 #include "Animation/AnimNodeBase.h"
 #include "PoseSearch/PoseSearchLibrary.h"
@@ -29,8 +30,19 @@ public:
 
 	UGAMotionMatchingAnimInstance();
 
+	virtual void NativeInitializeAnimation() override;
+	
+	UFUNCTION(BlueprintCallable, Category="GA|Animation|MotionMatching", meta=(BlueprintThreadSafe))
+	void SetReferences();
+	
 	UFUNCTION(BlueprintCallable, Category="GA|Animation|MotionMatching", meta=(BlueprintThreadSafe))
 	void UpdateState();
+
+	UFUNCTION(BlueprintCallable, Category="GA|Animation|MotionMatching", meta=(BlueprintThreadSafe))
+	void GenerateTrajectory();
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category="GA|Animation|MotionMatching|MovementAnalysis", meta=(BlueprintThreadSafe))
+	bool IsMoving() const ;
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category="GA|Animation|MotionMatching|MovementAnalysis", meta=(BlueprintThreadSafe))
 	bool ShouldSpinTransition() const ;
@@ -47,8 +59,23 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category="GA|Animation|MotionMatching|MovementAnalysis", meta=(BlueprintThreadSafe))
 	bool JustTraversed() const ;
 
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category="GA|Animation|MotionMatching|Additive Lean", meta=(BlueprintThreadSafe))
+	FVector CalculateRelativeAccelerationAmount() const ;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category="GA|Animation|MotionMatching|Additive Lean", meta=(BlueprintThreadSafe))
+	FVector2D GetLeanAmount() const ;
+	
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category="GA|Animation|MotionMatching|RootOffset", meta=(BlueprintThreadSafe))
 	float GetOffsetRootTranslationHalfLife() const ;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category="GA|Animation|MotionMatching|RootOffset", meta=(BlueprintThreadSafe))
+	EOffsetRootBoneMode GetOffsetRootTranslationMode() const ;
+	
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category="GA|Animation|MotionMatching|RootOffset", meta=(BlueprintThreadSafe))
+	EOffsetRootBoneMode GetOffsetRootRotationMode() const ;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category="GA|Animation|MotionMatching|RootOffset", meta=(BlueprintThreadSafe))
+	EOrientationWarpingSpace GetOrientationWarpingSpace() const ;
 
 	//UFUNCTION(BlueprintCallable, BlueprintPure, Category="GA|Animation|MotionMatching", meta=(BlueprintThreadSafe))
 	//void UpdateMotionMatching(const FAnimationUpdateContext& Context, FAnimNodeReference& Node);
@@ -58,6 +85,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category="GA|Animation|MotionMatching|Aim Offset", meta=(BlueprintThreadSafe))
 	FVector2D GetAOValue() const ;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category="GA|Animation|MotionMatching|Aim Offset", meta=(BlueprintThreadSafe))
+	bool IsEnableAO() const ;
 	
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category="GA|Animation|MotionMatching", meta=(BlueprintThreadSafe))
 	EPoseSearchInterruptMode GetMotionMatchingInterruptMode() const ;

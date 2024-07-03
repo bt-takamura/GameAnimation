@@ -17,6 +17,51 @@ UGAMotionMatchingAnimInstance::UGAMotionMatchingAnimInstance()
 	
 }
 
+void UGAMotionMatchingAnimInstance::NativeInitializeAnimation()
+{
+	Super::NativeInitializeAnimation();
+
+	SetReferences();
+}
+
+void UGAMotionMatchingAnimInstance::SetReferences()
+{
+	AGAPlayer* Player(Cast<AGAPlayer>(TryGetPawnOwner()));
+
+	if(Player != nullptr)
+	{
+		OwnerCharacter = Player;
+
+		OwnerMovementComponent = Cast<UCharacterMovementComponent>(Player->GetMovementComponent());
+	} else
+	{
+		SNPLUGIN_ERROR(TEXT("Player is nullptr."));
+	}
+}
+
+void UGAMotionMatchingAnimInstance::GenerateTrajectory()
+{
+	const FPoseSearchTrajectoryData& TrajectoryData = (Speed2D> 0.0f) ? TrajectoryGenerationDataMoving : TrajectoryGenerationDataIdle;
+
+	FPoseSearchQueryTrajectory ResultTrajectory;
+	
+	UPoseSearchTrajectoryLibrary::PoseSearchGenerateTrajectory(this, TrajectoryData, GetDeltaSeconds(), Trajectory, PreviousDesiredControllerYaw, ResultTrajectory, -1.0f, 30, 0.1f, 15);
+
+	UPoseSearchTrajectoryLibrary::HandleTrajectoryWorldCollisions(GetWorld(), this, ResultTrajectory, true, 0.01f, Trajectory, TrajectoryCollision, UEngineTypes::ConvertToTraceType(ECC_Visibility), false, TArray<AActor*>(), EDrawDebugTrace::None, true, 150.0f);
+
+	FPoseSearchQueryTrajectorySample Sample00;
+
+	UPoseSearchTrajectoryLibrary::GetTrajectorySampleAtTime(Trajectory, 0.5f, Sample00);
+	
+	FPoseSearchQueryTrajectorySample Sample01;
+
+	UPoseSearchTrajectoryLibrary::GetTrajectorySampleAtTime(Trajectory, 0.4f, Sample01);
+
+	FVector TmpVector((Sample00.Position - Sample01.Position) * 10.0f);
+
+	FutureVelocity = TmpVector;
+}
+
 void UGAMotionMatchingAnimInstance::SetInteractTransform(const FTransform& Transform)
 {
 	InteractionTransform = Transform;
@@ -34,6 +79,17 @@ bool UGAMotionMatchingAnimInstance::ShouldSpinTransition() const
 	if((FMath::Abs(DeltaRotator.Yaw) >= 130.0f)
 	&& (Speed2D >= 150.0f)
 	&& (CurrentDatabaseTags.Contains(TEXT("Pivots")))){
+		return true;
+	}
+	
+	return false;
+}
+
+bool UGAMotionMatchingAnimInstance::IsMoving() const
+{
+	if((UKismetMathLibrary::NotEqual_VectorVector(Velocity      , FVector::ZeroVector, 0.1f) == true)
+	&& (UKismetMathLibrary::NotEqual_VectorVector(FutureVelocity, FVector::ZeroVector, 0.1f) == true))
+	{
 		return true;
 	}
 	
@@ -112,6 +168,70 @@ bool UGAMotionMatchingAnimInstance::JustTraversed() const
 	return false;
 }
 
+FVector UGAMotionMatchingAnimInstance::CalculateRelativeAccelerationAmount() const
+{
+	FVector Result(FVector::ZeroVector);
+
+	if(OwnerMovementComponent != nullptr)
+	{
+		if((OwnerMovementComponent->MaxAcceleration > 0.0f)
+		&& (OwnerMovementComponent->GetMaxBrakingDeceleration() > 0.0f))
+		{
+			if(FVector::DotProduct(Acceleration, Velocity) > 0.0f)
+			{
+				FVector TmpVector(UKismetMathLibrary::Vector_ClampSizeMax(VelocityAcceleration, OwnerMovementComponent->MaxAcceleration));
+
+				TmpVector /= OwnerMovementComponent->MaxAcceleration;
+
+				Result = UKismetMathLibrary::Quat_UnrotateVector(CharacterTransform.GetRotation(), TmpVector);
+			} else
+			{
+				FVector TmpVector(UKismetMathLibrary::Vector_ClampSizeMax(VelocityAcceleration, OwnerMovementComponent->GetMaxBrakingDeceleration()));
+
+				TmpVector /= OwnerMovementComponent->GetMaxBrakingDeceleration();
+
+				Result = UKismetMathLibrary::Quat_UnrotateVector(CharacterTransform.GetRotation(), TmpVector);
+			}
+		}
+	}
+
+	return Result;
+}
+
+FVector2D UGAMotionMatchingAnimInstance::GetLeanAmount() const
+{
+	FVector RelativeAccelerate(CalculateRelativeAccelerationAmount());
+
+	float Range = UKismetMathLibrary::MapRangeClamped(Speed2D, 200.0f, 500.0f, 0.5, 1.0f);
+	
+	float Result = RelativeAccelerate.Y * Range;
+
+	return FVector2D(Result, 0.0f);
+}
+
+
+EOffsetRootBoneMode UGAMotionMatchingAnimInstance::GetOffsetRootTranslationMode() const
+{
+	if(IsSlotActive(FName(TEXT("DefaultSlot"))))
+	{
+		return EOffsetRootBoneMode::Release;
+	} else
+	{
+		if(MovementMode == EMotionMatchingMovementMode::OnGround)
+		{
+			if(IsMoving() == true)
+			{
+				return EOffsetRootBoneMode::Interpolate;
+			} else
+			{
+				return EOffsetRootBoneMode::Release;
+			}
+		}
+	}
+
+	return EOffsetRootBoneMode::Release;
+}
+
 float UGAMotionMatchingAnimInstance::GetOffsetRootTranslationHalfLife() const
 {
 	if(MovementState == EMotionMatchingMovementState::Idle)
@@ -123,14 +243,57 @@ float UGAMotionMatchingAnimInstance::GetOffsetRootTranslationHalfLife() const
 	}
 }
 
+EOrientationWarpingSpace UGAMotionMatchingAnimInstance::GetOrientationWarpingSpace() const
+{
+	if(OffsetRootBoneEnable == true)
+	{
+		return EOrientationWarpingSpace::RootBoneTransform;
+	} else
+	{
+		return EOrientationWarpingSpace::CustomTransform;
+	}
+}
+
+
 //void UGAMotionMatchingAnimInstance::UpdateMotionMatching(FAnimationUpdateContext& Context, FAnimNodeReference& Node)
 //{
 //	
 //}
 
+EOffsetRootBoneMode UGAMotionMatchingAnimInstance::GetOffsetRootRotationMode() const
+{
+	if(IsSlotActive(FName(TEXT("DefaultSlot"))))
+	{
+		return EOffsetRootBoneMode::Release;
+	} else
+	{
+		return EOffsetRootBoneMode::Accumulate;
+	}
+}
+
 float UGAMotionMatchingAnimInstance::GetMotionMatchingBlendTime() const
 {
 	float Result = 0.0f;
+
+	if(MovementMode == EMotionMatchingMovementMode::OnGround)
+	{
+		if(MovementModeLastFrame == EMotionMatchingMovementMode::OnGround)
+		{
+			Result = 0.4f;
+		} else
+		{
+			Result = 0.2f;
+		}
+	} else
+	{
+		if(Velocity.Z > 100.0f)
+		{
+			Result = 0.15f;
+		} else
+		{
+			Result = 0.5f;
+		}
+	}
 	
 	return Result;
 }
@@ -147,6 +310,20 @@ FVector2D UGAMotionMatchingAnimInstance::GetAOValue() const
 	FRotator Normalized(UKismetMathLibrary::NormalizedDeltaRotator(CharacterRotate, RootTransform.Rotator()));
 
 	return FVector2D(Normalized.Yaw, Normalized.Pitch);
+}
+
+bool UGAMotionMatchingAnimInstance::IsEnableAO() const
+{
+	FVector2D AOValue(GetAOValue());
+
+	if((FMath::Abs(AOValue.X) <= 115.0f)
+	&& (RotationMode == EMotionMatchingRotationMode::Strafe)
+	&& (GetSlotMontageLocalWeight(FName(TEXT("DefaultSlot"))) < 0.5f))
+	{
+		return true;
+	}
+
+	return false;
 }
 
 
@@ -190,6 +367,43 @@ void UGAMotionMatchingAnimInstance::UpdateState()
 		return;
 	}
 
+	MovementModeLastFrame = MovementMode;
+
+	switch(OwnerMovementComponent->MovementMode)
+	{
+	case MOVE_None:
+	case MOVE_Walking:
+	case MOVE_NavWalking:
+		MovementMode = EMotionMatchingMovementMode::OnGround; break;
+	case MOVE_Falling:
+		MovementMode = EMotionMatchingMovementMode::InAir; break;
+	default:
+		MovementMode = EMotionMatchingMovementMode::OnGround;
+		SNPLUGIN_ERROR(TEXT("Invalid Movement Mode."));
+		break;
+	}
+	
+	RotationModeLastFrame = RotationMode;
+
+	if(OwnerMovementComponent->bOrientRotationToMovement == true)
+	{
+		RotationMode = EMotionMatchingRotationMode::OrientToMovement;
+	} else
+	{
+		RotationMode = EMotionMatchingRotationMode::Strafe;
+	}
+
+	MovementStateLastFrame = MovementState;
+
+	if(IsMoving() == true)
+	{
+		MovementState = EMotionMatchingMovementState::Moving;
+	} else
+	{
+		MovementState = EMotionMatchingMovementState::Idle;
+	}
+	
+	
 	// キャラクタのGaitをキャッシュし、最後のフレームの値を保存します。Gait Enumは、現在の速度ではなく、入力から意図された運動スタイルを記述します。
 	// 例えば、キャラクタはゆっくり動いていても、Run Gait Enumの状態である可能性があります。
 	StrideLastFrame = Stride;
