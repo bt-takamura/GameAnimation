@@ -8,8 +8,11 @@
 #include "SNDef.h"
 #include "GameAnimationSample/Character/Player/GAPlayer.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "PoseSearch/PoseSearchTrajectoryLibrary.h"
+#include "PoseSearch/PoseSearchDatabase.h"
+#include "PoseSearch/MotionMatchingAnimNodeLibrary.h"
 
 UGAMotionMatchingAnimInstance::UGAMotionMatchingAnimInstance()
 :Super()
@@ -61,6 +64,26 @@ void UGAMotionMatchingAnimInstance::GenerateTrajectory()
 
 	FutureVelocity = TmpVector;
 }
+
+void UGAMotionMatchingAnimInstance::UpdateEssentialValues()
+{
+	VelocityAcceleration = (Velocity - VelocityLastFrame) / FMath::Max(UGameplayStatics::GetWorldDeltaSeconds(GetWorld()), 0.001f);
+	
+	if(HasVelocity == true)
+	{
+		LastNonZeroVelocity = Velocity;
+	}
+#if !UE_BUILD_SHIPPING
+	// データ駆動型CVar（プロジェクト設定で作成されるコンソール変数）の値をキャッシュします。この整数をメインのMotion Matching Chooserで使用し、DenseとSparseのデータベースを入れ替えます。
+	DatabaseLOD = UKismetSystemLibrary::GetConsoleVariableIntValue(TEXT("DDCvar.MMDatabaseLOD"));
+#endif
+	// 現在選択されているMotionマッチングデータベースのタグをキャッシュする。これにより、現在のデータベースに基づいて追加の選択を行うことができる。
+	if(IsValid(CurrentSelectDatabase))
+	{
+		CurrentDatabaseTags = CurrentSelectDatabase->Tags;
+	}
+}
+
 
 void UGAMotionMatchingAnimInstance::SetInteractTransform(const FTransform& Transform)
 {
@@ -254,11 +277,60 @@ EOrientationWarpingSpace UGAMotionMatchingAnimInstance::GetOrientationWarpingSpa
 	}
 }
 
+// この Anim Node Function は、Motion Matching ノードが更新されるたびに呼び出されます。この関数はChooserアセットを評価し、現在のゲームプレイコンテキストに基づいたポーズ検索データベースアセットの配列を返します。
+// これにより、より高度なフィルタリングを行うことができ、モーションマッチングシステムが選択できるアニメーションをよりコントロールできるようになります。
+// 例えば、キャラクターが（プレイヤーの入力でコントロールされて）歩いているときだけ、歩行データベースから検索し、キャラクターが歩こうとしているときにモーションマッチングがランを選択するのを防ぎます。
+void UGAMotionMatchingAnimInstance::UpdateMotionMatching(const FAnimUpdateContext& Context, const FAnimNodeReference& Node)
+{
+	// ここからChooserTableのEvaluate処理
+	// 2024年6月時点で実験的機能なのでこれから結構変更ありそう...。
+	FChooserEvaluationContext ChooserContext(UChooserFunctionLibrary::MakeChooserEvaluationContext());
 
-//void UGAMotionMatchingAnimInstance::UpdateMotionMatching(FAnimationUpdateContext& Context, FAnimNodeReference& Node)
-//{
-//	
-//}
+	ChooserContext.AddObjectParam(this);
+	// 評価するChooserを設定
+	FInstancedStruct ChooserInstance(UChooserFunctionLibrary::MakeEvaluateChooser(AnimationSearchChooser));
+	// 評価を実行
+	TArray<UObject*> Assets(UChooserFunctionLibrary::EvaluateObjectChooserBaseMulti(ChooserContext, ChooserInstance, UPoseSearchDatabase::StaticClass()));
+
+	EAnimNodeReferenceConversionResult Result = EAnimNodeReferenceConversionResult::Failed;
+	
+	const FMotionMatchingAnimNodeReference& MotionMatchingNode = UMotionMatchingAnimNodeLibrary::ConvertToMotionMatchingNode(Node, Result);
+	
+	EPoseSearchInterruptMode InterruptMode = GetMotionMatchingInterruptMode();
+
+	TArray<UPoseSearchDatabase*> DatabaseList;
+
+	for(auto& Element:Assets)
+	{
+		UPoseSearchDatabase* Database = Cast<UPoseSearchDatabase>(Element);
+
+		if(Database != nullptr)
+		{
+			DatabaseList.Add(Database);
+		}
+	}
+		
+	UMotionMatchingAnimNodeLibrary::SetDatabasesToSearch(MotionMatchingNode, DatabaseList, InterruptMode);
+	
+}
+
+void UGAMotionMatchingAnimInstance::UpdateMotionMatchingPoseSelection(const FAnimUpdateContext& Context, const FAnimNodeReference& Node)
+{
+	EAnimNodeReferenceConversionResult Result = EAnimNodeReferenceConversionResult::Failed;
+	
+	const FMotionMatchingAnimNodeReference& MotionMatchingNode = UMotionMatchingAnimNodeLibrary::ConvertToMotionMatchingNode(Node, Result);
+
+	bool IsValidResult = false;
+	
+	FPoseSearchBlueprintResult SearchResult;
+	
+	UMotionMatchingAnimNodeLibrary::GetMotionMatchingSearchResult(MotionMatchingNode, SearchResult, IsValidResult);
+
+	const UPoseSearchDatabase* Selected = SearchResult.SelectedDatabase.Get();
+	
+	CurrentSelectDatabase = const_cast<UPoseSearchDatabase*>(Selected);
+}
+
 
 EOffsetRootBoneMode UGAMotionMatchingAnimInstance::GetOffsetRootRotationMode() const
 {

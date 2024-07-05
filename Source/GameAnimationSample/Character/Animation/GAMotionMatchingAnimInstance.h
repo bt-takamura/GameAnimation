@@ -12,6 +12,7 @@
 #include "PoseSearch/PoseSearchLibrary.h"
 #include "GAMotionMatchingAnimInstance.generated.h"
 
+class UChooserTable;
 class AGAPlayer;
 class UCharacterMovementComponent;
 struct FPoseSearchTrajectory_WorldCollisionResults;
@@ -37,6 +38,9 @@ public:
 	
 	UFUNCTION(BlueprintCallable, Category="GA|Animation|MotionMatching", meta=(BlueprintThreadSafe))
 	void UpdateState();
+
+	UFUNCTION(BlueprintCallable, Category="GA|Animation|MotionMatching", meta=(BlueprintThreadSafe))
+	void UpdateEssentialValues();
 
 	UFUNCTION(BlueprintCallable, Category="GA|Animation|MotionMatching", meta=(BlueprintThreadSafe))
 	void GenerateTrajectory();
@@ -77,8 +81,11 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category="GA|Animation|MotionMatching|RootOffset", meta=(BlueprintThreadSafe))
 	EOrientationWarpingSpace GetOrientationWarpingSpace() const ;
 
-	//UFUNCTION(BlueprintCallable, BlueprintPure, Category="GA|Animation|MotionMatching", meta=(BlueprintThreadSafe))
-	//void UpdateMotionMatching(const FAnimationUpdateContext& Context, FAnimNodeReference& Node);
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category="GA|Animation|MotionMatching", meta=(BlueprintThreadSafe))
+	void UpdateMotionMatching(const FAnimUpdateContext& Context, const FAnimNodeReference& Node);
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category="GA|Animation|MotionMatching", meta=(BlueprintThreadSafe))
+	void UpdateMotionMatchingPoseSelection(const FAnimUpdateContext& Context, const FAnimNodeReference& Node);
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category="GA|Animation|MotionMatching", meta=(BlueprintThreadSafe))
 	float GetMotionMatchingBlendTime() const ;
@@ -107,6 +114,9 @@ public:
 	//UFUNCTION(BlueprintCallable, meta=(BlueprintThreadSafe))
 	//const FTransform& GetInteractTransform() const override ;
 
+	UPROPERTY(EditAnywhere, Category="GA|Animation Chooser")
+	TObjectPtr<UChooserTable> AnimationSearchChooser = nullptr;
+	
 	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category="GA|Refarence")
 	AGAPlayer* OwnerCharacter;
 
