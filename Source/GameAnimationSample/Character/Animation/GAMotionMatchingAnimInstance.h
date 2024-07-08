@@ -5,10 +5,16 @@
 #include "CoreMinimal.h"
 #include "GAMotionMatchingDef.h"
 #include "GAInterfactionTransform.h"
-#include "InstancedStruct.h"
+#include "BoneControllers/AnimNode_OffsetRootBone.h"
+#include "BoneControllers/AnimNode_OrientationWarping.h"
 #include "Animation/AnimInstance.h"
+#include "Animation/AnimNodeBase.h"
+#include "PoseSearch/PoseSearchLibrary.h"
 #include "GAMotionMatchingAnimInstance.generated.h"
 
+class UChooserTable;
+class AGAPlayer;
+class UCharacterMovementComponent;
 struct FPoseSearchTrajectory_WorldCollisionResults;
 struct FPoseSearchQueryTrajectory;
 struct FPoseSearchTrajectoryData;
@@ -25,6 +31,82 @@ public:
 
 	UGAMotionMatchingAnimInstance();
 
+	virtual void NativeInitializeAnimation() override;
+
+	virtual void NativeUpdateAnimation(float DeltaSeconds) override;
+	
+	UFUNCTION(BlueprintCallable, Category="GA|Animation|MotionMatching", meta=(BlueprintThreadSafe))
+	void SetReferences();
+	
+	UFUNCTION(BlueprintCallable, Category="GA|Animation|MotionMatching", meta=(BlueprintThreadSafe))
+	void UpdateState();
+
+	UFUNCTION(BlueprintCallable, Category="GA|Animation|MotionMatching", meta=(BlueprintThreadSafe))
+	void UpdateEssentialValues();
+
+	UFUNCTION(BlueprintCallable, Category="GA|Animation|MotionMatching", meta=(BlueprintThreadSafe))
+	void GenerateTrajectory();
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category="GA|Animation|MotionMatching|MovementAnalysis", meta=(BlueprintThreadSafe))
+	bool IsMoving() const ;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category="GA|Animation|MotionMatching|MovementAnalysis", meta=(BlueprintThreadSafe))
+	bool ShouldSpinTransition() const ;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category="GA|Animation|MotionMatching|MovementAnalysis", meta=(BlueprintThreadSafe))
+	bool SholdTurnInPlace() const ;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category="GA|Animation|MotionMatching|MovementAnalysis", meta=(BlueprintThreadSafe))
+	bool JustLandedLight() const ;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category="GA|Animation|MotionMatching|MovementAnalysis", meta=(BlueprintThreadSafe))
+	bool JustLandedHeavy() const ;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category="GA|Animation|MotionMatching|MovementAnalysis", meta=(BlueprintThreadSafe))
+	bool JustTraversed() const ;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category="GA|Animation|MotionMatching|Additive Lean", meta=(BlueprintThreadSafe))
+	FVector CalculateRelativeAccelerationAmount() const ;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category="GA|Animation|MotionMatching|Additive Lean", meta=(BlueprintThreadSafe))
+	FVector2D GetLeanAmount() const ;
+	
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category="GA|Animation|MotionMatching|RootOffset", meta=(BlueprintThreadSafe))
+	float GetOffsetRootTranslationHalfLife() const ;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category="GA|Animation|MotionMatching|RootOffset", meta=(BlueprintThreadSafe))
+	EOffsetRootBoneMode GetOffsetRootTranslationMode() const ;
+	
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category="GA|Animation|MotionMatching|RootOffset", meta=(BlueprintThreadSafe))
+	EOffsetRootBoneMode GetOffsetRootRotationMode() const ;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category="GA|Animation|MotionMatching|RootOffset", meta=(BlueprintThreadSafe))
+	EOrientationWarpingSpace GetOrientationWarpingSpace() const ;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category="GA|Animation|MotionMatching", meta=(BlueprintThreadSafe))
+	void UpdateMotionMatching(const FAnimUpdateContext& Context, const FAnimNodeReference& Node);
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category="GA|Animation|MotionMatching", meta=(BlueprintThreadSafe))
+	void UpdateMotionMatchingPoseSelection(const FAnimUpdateContext& Context, const FAnimNodeReference& Node);
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category="GA|Animation|MotionMatching", meta=(BlueprintThreadSafe))
+	float GetMotionMatchingBlendTime() const ;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category="GA|Animation|MotionMatching|Aim Offset", meta=(BlueprintThreadSafe))
+	FVector2D GetAOValue() const ;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category="GA|Animation|MotionMatching|Aim Offset", meta=(BlueprintThreadSafe))
+	bool IsEnableAO() const ;
+	
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category="GA|Animation|MotionMatching", meta=(BlueprintThreadSafe))
+	EPoseSearchInterruptMode GetMotionMatchingInterruptMode() const ;
+	
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category="GA|Animation|MotionMatching|Steering", meta=(BlueprintThreadSafe))
+	bool EnableSteering() const ;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category="GA|Animation|MotionMatching|Steering", meta=(BlueprintThreadSafe))
+	FQuat GetTrajectoryFacing() const ;
+	
 	virtual void SetInteractTransform(const FTransform& InteractionTransform) override;
 
 	virtual const FTransform& GetInteractTransform() const override;
@@ -34,6 +116,15 @@ public:
 	//UFUNCTION(BlueprintCallable, meta=(BlueprintThreadSafe))
 	//const FTransform& GetInteractTransform() const override ;
 
+	UPROPERTY(EditAnywhere, Category="GA|Animation Chooser")
+	TObjectPtr<UChooserTable> AnimationSearchChooser = nullptr;
+	
+	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category="GA|Refarence")
+	AGAPlayer* OwnerCharacter;
+
+	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category="GA|Refarence")
+	UCharacterMovementComponent* OwnerMovementComponent;
+	
 	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category="GA|EssentialValues")
 	FTransform CharacterTransform = FTransform::Identity;
 
@@ -116,16 +207,16 @@ public:
 	TEnumAsByte<EMotionMatchingStance> StanceLastFrame = EMotionMatchingStance::Stand;
 
 	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category="GA|Trajectory")
-	FInstancedStruct TrajectoryGenerationDataIdle;
+	FPoseSearchTrajectoryData TrajectoryGenerationDataIdle;
 
 	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category="GA|Trajectory")
-	FInstancedStruct TrajectoryGenerationDataMoving;
+	FPoseSearchTrajectoryData TrajectoryGenerationDataMoving;
 
 	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category="GA|Trajectory")
-	FInstancedStruct Trajectory;
+	FPoseSearchQueryTrajectory Trajectory;
 
 	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category="GA|Trajectory")
-	FInstancedStruct TrajectoryCollision;
+	FPoseSearchTrajectory_WorldCollisionResults TrajectoryCollision;
 
 	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category="GA|Trajectory")
 	float PreviousDesiredControllerYaw = 0.0f;

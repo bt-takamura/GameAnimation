@@ -418,7 +418,7 @@ void AGAPlayer::SetInteractTransform(FTraversalCheckResult& TraversalCheckResult
 	if(AnimIntance == nullptr)
 	{
 		SNPLUGIN_LOG(TEXT("Animamtion Instance is nullptr."));
-
+		
 		return;
 	}
 
@@ -529,6 +529,8 @@ void AGAPlayer::ExecPerformTraversalAction(const FTraversalCheckResult& Traversa
 		Proxy->OnCompleted.AddDynamic(this, &AGAPlayer::EndPlayMontage);
 		
 		Proxy->OnInterrupted.AddDynamic(this, &AGAPlayer::EndPlayMontage);
+
+		Proxy->OnBlendOut.AddDynamic(this, &AGAPlayer::EndPlayMontage);
 		
 		bDoingTraversalAction = true;
 		
