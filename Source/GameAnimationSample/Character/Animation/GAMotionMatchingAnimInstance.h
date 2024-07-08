@@ -32,6 +32,8 @@ public:
 	UGAMotionMatchingAnimInstance();
 
 	virtual void NativeInitializeAnimation() override;
+
+	virtual void NativeUpdateAnimation(float DeltaSeconds) override;
 	
 	UFUNCTION(BlueprintCallable, Category="GA|Animation|MotionMatching", meta=(BlueprintThreadSafe))
 	void SetReferences();

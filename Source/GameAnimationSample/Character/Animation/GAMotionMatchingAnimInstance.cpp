@@ -3,9 +3,13 @@
 
 #include "GameAnimationSample/Character/Animation/GAMotionMatchingAnimInstance.h"
 
+#include "AnimationWarpingLibrary.h"
+#include "AnimExecutionContextLibrary.h"
 #include "Chooser.h"
 #include "ChooserFunctionLibrary.h"
 #include "SNDef.h"
+#include "Animation/AnimSubsystem_Tag.h"
+#include "Evaluation/IMovieSceneEvaluationHook.h"
 #include "GameAnimationSample/Character/Player/GAPlayer.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
@@ -26,6 +30,21 @@ void UGAMotionMatchingAnimInstance::NativeInitializeAnimation()
 
 	SetReferences();
 }
+
+void UGAMotionMatchingAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
+{
+	Super::NativeUpdateAnimation(DeltaSeconds);
+
+	if(OwnerCharacter != nullptr)
+	{
+		UpdateEssentialValues();
+
+		GenerateTrajectory();
+
+		UpdateState();
+	}
+}
+
 
 void UGAMotionMatchingAnimInstance::SetReferences()
 {
@@ -67,6 +86,66 @@ void UGAMotionMatchingAnimInstance::GenerateTrajectory()
 
 void UGAMotionMatchingAnimInstance::UpdateEssentialValues()
 {
+	if(OwnerCharacter != nullptr)
+	{
+		CharacterTransform = OwnerCharacter->GetActorTransform();
+	}
+	// 可能であれば、オフセットされたルートボーンノードからルートボーントランスフォームをキャッシュします。
+	// Get Socket Transform 関数を使用する代わりにこの方法でオフセットを保存すると、より正確な値が得られます。
+	// スケルタルメッシュはエディタではデフォルトで -90 度回転されるため、他のトランスフォームとの角度比較を容易にするためにオフセットが追加されます。
+	OffsetRootBoneEnable = UKismetSystemLibrary::GetConsoleVariableBoolValue(TEXT("a.animnode.offsetrootbone.enable"));
+
+	if(OffsetRootBoneEnable == true)
+	{
+		IAnimClassInterface* AnimClassInterface = IAnimClassInterface::GetFromClass(GetClass());
+
+		const FAnimSubsystem_Tag& AnimSubsystemTag = AnimClassInterface->GetSubsystem<FAnimSubsystem_Tag>();
+
+		FAnimNode_OffsetRootBone* OffsetRootBone = AnimSubsystemTag.FindNodeByTag<FAnimNode_OffsetRootBone>(TEXT("OffsetRoot"), this);
+
+		if(OffsetRootBone != nullptr)
+		{
+			FAnimNodeReference OffsetRootBoneReference(this, *OffsetRootBone);
+		
+			const TArray<FStructProperty*>& AnimNodeProperties = AnimClassInterface->GetAnimNodeProperties();
+		
+			FAnimNodeReference NodeReference = UAnimExecutionContextLibrary::GetAnimNodeReference(this, 0);
+
+			FTransform OffsetRootBoneTransform = UAnimationWarpingLibrary::GetOffsetRootTransform(OffsetRootBoneReference);
+
+			FRotator Tmp(OffsetRootBoneTransform.Rotator());
+
+			Tmp.Yaw += 90.0f;
+
+			RootTransform = UKismetMathLibrary::MakeTransform(OffsetRootBoneTransform.GetLocation(), Tmp, FVector::OneVector);
+		}
+	} else
+	{
+		RootTransform = CharacterTransform;
+	}
+	// キャラクタの加速度に関する重要な情報をキャッシュします。これは、物理的な加速度ではなく、移動コンポーネントによって適用される入力加速度です。
+	// これらの値のすべてが現在グラフで使用されているわけではありませんが、追加機能のために手元に置いておくことは重要です。
+	if(OwnerMovementComponent != nullptr)
+	{
+		Acceleration = OwnerMovementComponent->GetCurrentAcceleration();
+
+		AccelerationAmount = Acceleration.Length() / OwnerMovementComponent->GetMaxAcceleration();
+	}
+
+	HasAcceleration = (AccelerationAmount > 0.0f) ? true : false;
+	// キャラクタのベロシティに関する重要な情報をキャッシュします。
+	// これらの値のすべてが現在グラフで使用されているわけではありませんが、追加機能のために手元に置いておくことは重要です。
+	VelocityLastFrame = Velocity;
+	
+	if(OwnerMovementComponent != nullptr)
+	{
+		Velocity = OwnerMovementComponent->Velocity;
+	}
+
+	Speed2D = Velocity.Size2D();
+
+	HasVelocity = (Speed2D > 5.0f) ? true : false;
+	
 	VelocityAcceleration = (Velocity - VelocityLastFrame) / FMath::Max(UGameplayStatics::GetWorldDeltaSeconds(GetWorld()), 0.001f);
 	
 	if(HasVelocity == true)
@@ -451,7 +530,7 @@ void UGAMotionMatchingAnimInstance::UpdateState()
 		MovementMode = EMotionMatchingMovementMode::InAir; break;
 	default:
 		MovementMode = EMotionMatchingMovementMode::OnGround;
-		SNPLUGIN_ERROR(TEXT("Invalid Movement Mode."));
+//		SNPLUGIN_ERROR(TEXT("Invalid Movement Mode."));
 		break;
 	}
 	
