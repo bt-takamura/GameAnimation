@@ -20,7 +20,7 @@ void UGAJumpAction::ExecAction(const FInputActionValue& InputActionValue)
 		return;
 	}
 
-	if(Player->GetEnableTraversalAction() != true)
+	if(Player->IsEnableTraversalAction() != true)
 	{
 		if(Player->GetCharacterMovement()->IsMovingOnGround() == true)
 		{
@@ -40,6 +40,16 @@ void UGAJumpAction::ExecAction(const FInputActionValue& InputActionValue)
 			{
 				SNPLUGIN_LOG(TEXT("Traversal Montagen can't find."));
 			}
+		} else
+		{
+			// @@Satoshi Nishimura テスト的にジャンプ・落下中にしがみつけるようにしてみる。
+			// つながりやめり込みが気になるものの、SplineComponentが仕込まれているメッシュであれば掴める。
+			float FowardTraceDistance = Player->GetTraversalForwardTraceDistance();
+
+			bool TraversalCheckFailed = false;
+			bool MontageSelectionFailed = false;
+			
+			Player->ExecTraversalAction(FowardTraceDistance * 1.5f, TraversalCheckFailed, MontageSelectionFailed);
 		}
 	}
 }

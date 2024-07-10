@@ -21,17 +21,24 @@
 #include "Kismet/GameplayStatics.h"
 #include "Utility/SNUtility.h"
 
+//----------------------------------------------------------------------//
+//
+//! @brief デフォルトコンストラクタ
+//
+//! @param Initializer イニシャライザ
+//
+//----------------------------------------------------------------------//
 AGAPlayer::AGAPlayer(const FObjectInitializer& Initializer):
 Super(Initializer)
 {
 	SpringArmComponent = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArmComponent"));
-
+	
 	SpringArmComponent->SetupAttachment(GetRootComponent());
 	
 	MotionWarpingComponent = CreateDefaultSubobject<UMotionWarpingComponent>(TEXT("MotionWarpingComponent"));
-
+	
 	CameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("CameraCompoennt"));
-
+	
 	CameraComponent->SetupAttachment(SpringArmComponent);
 }
 
@@ -46,9 +53,9 @@ void AGAPlayer::PossessedBy(AController* NewController)
 void AGAPlayer::BeginPlay()	
 {
 	Super::BeginPlay();
-
+	
 	ASNPlayerController* PlayerController(SNUtility::GetPlayerController<ASNPlayerController>());
-
+	
 	if(PlayerController != nullptr)
 	{
 		PlayerController->EnabledInputType(FName(TEXT("Normal")));
@@ -58,39 +65,14 @@ void AGAPlayer::BeginPlay()
 void AGAPlayer::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
-
+	
 	UpdateMovement();
-
+	
 	UpdateRotation();
-
+	
 	UpdateCamera(true);
 }
 
-
-void AGAPlayer::SetEnableTraversalAction(bool bEnable)
-{
-	bDoingTraversalAction = bEnable;
-}
-
-bool AGAPlayer::GetEnableTraversalAction() const
-{
-	return bDoingTraversalAction;
-}
-
-USpringArmComponent* AGAPlayer::GetSpringArmComponent()
-{
-	return SpringArmComponent;
-}
-
-UMotionWarpingComponent* AGAPlayer::GetMotionWarpingComponent()
-{
-	return MotionWarpingComponent;
-}
-
-UCameraComponent* AGAPlayer::GetCameraComponent()
-{
-	return CameraComponent;
-}
 
 void AGAPlayer::ExecTraversalAction(float TraceForwardDistance, bool& TraversalCheckFailed, bool& MontageSelectionFailed)
 {
@@ -153,9 +135,19 @@ bool AGAPlayer::PerformFowardBlocks(FTraversalCheckResult& TraversalCheckResult,
 	FVector ActorLocation(GetActorLocation());
 	
 	FVector ActorForwardVector(GetActorForwardVector());
-	
+#if 0
 	FVector EndPoint(ActorLocation + ActorForwardVector * TraceForwardDistance);
+#else
+	FVector Velocity(GetMovementComponent()->Velocity);
 	
+	FVector Remap(
+				UKismetMathLibrary::MapRangeClamped(Velocity.X, 0.0f, 500.0f, 75.0f, 350.0f),
+				UKismetMathLibrary::MapRangeClamped(Velocity.Y, 0.0f, 500.0f, 75.0f, 350.0f),
+				UKismetMathLibrary::MapRangeClamped(Velocity.Z, 0.0f, 500.0f, 75.0f, 350.0f)
+			);
+			
+	FVector EndPoint(ActorLocation + Velocity);
+#endif
 	EDrawDebugTrace::Type DebugTrace = (DrawDebugLegel >= 2) ? EDrawDebugTrace::ForDuration : EDrawDebugTrace::None;
 	
 	FHitResult HitResult;
@@ -199,11 +191,10 @@ void AGAPlayer::DrawDebugShapesAtLedgeLocation(const FTraversalCheckResult& Trav
 
 bool AGAPlayer::PerformDecisionOnActorToEachEdge(FTraversalCheckResult& TraversalCheckResult, int DrawDebugLegel)
 {
-	if(TraversalCheckResult.HasFrontLedge == false)
-	{
+	if(TraversalCheckResult.HasFrontLedge == false){
 		return false;
 	}
-
+	
 	FVector FrontLedgeLocation(TraversalCheckResult.FrontLedgeLocation);
 	// コリジョンの半径を取得
 	float CapsuleRadius = GetCapsuleComponent()->GetScaledCapsuleRadius();
@@ -211,18 +202,16 @@ bool AGAPlayer::PerformDecisionOnActorToEachEdge(FTraversalCheckResult& Traversa
 	float CapsuleHalfHeight = GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
 	
 	FVector FrontLedgeNormalOffset(TraversalCheckResult.FrontLedgeNormal * (CapsuleRadius + 2.0f));
-
+	
 	float HeightOffset = CapsuleHalfHeight + 2.0f;
 	// 障害物との空間チェック用の位置情報を算出
 	FVector HasRoomCheckFromLedgeLocation(FrontLedgeLocation + FrontLedgeNormalOffset + FVector(0.0f, 0.0f, HeightOffset));
-
+	
 	bool Result = PerformActorToFrontEdge(TraversalCheckResult, HasRoomCheckFromLedgeLocation, DrawDebugLegel);
-
-	if(Result == false)
-	{
+	
+	if(Result == false){
 		return false;
 	}
-
 	// BlockActorのスプラインから得た障害物の反対側のロケーション情報を取得
 	FVector BackLedgeLocation(TraversalCheckResult.BackLedgeLocation);
 	// 法線方向にコリジョンの半径分オフセットさせる
@@ -249,15 +238,15 @@ bool AGAPlayer::PerformActorToFrontEdge(FTraversalCheckResult& TraversalCheckRes
 	float CapsuleRadius = GetCapsuleComponent()->GetScaledCapsuleRadius();
 	// コリジョンの高さの半分を取得
 	float CapsuleHalfHeight = GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
-
+	
 	EDrawDebugTrace::Type DebugTrace = (DrawDebugLegel >= 3) ? EDrawDebugTrace::ForDuration : EDrawDebugTrace::None;
 	
 	FHitResult HitResult;
-
+	
 	FVector ActorLocation(GetActorLocation());
 	
 	UKismetSystemLibrary::CapsuleTraceSingle(GetWorld(), ActorLocation, HasRoomCheckFromLedgeLocation, CapsuleRadius, CapsuleHalfHeight, UEngineTypes::ConvertToTraceType(ECC_Visibility), false, TArray<AActor*>(), DebugTrace, HitResult, true);
-
+	
 	bool Result = ((HitResult.bBlockingHit == false) && (HitResult.bStartPenetrating == false)) ? true : false;
 	
 	if(Result == true)
@@ -361,7 +350,27 @@ void AGAPlayer::DetermineTraversalAction(FTraversalCheckResult& TraversalCheckRe
 	{
 		TraversalCheckResult.ActionType = ETraversalActionType::Mantle;
 	} else {
+
+#if 1 // @@Satoshi Nishimura 2024/07/10
+		
+		if(GetCharacterMovement()->IsMovingOnGround() == false){
+			
+			if((TraversalCheckResult.HasFrontLedge == true)
+			&& (UKismetMathLibrary::InRange_FloatFloat(TraversalCheckResult.ObstacleHeight, 25.0f, 275.0f))
+			&& (TraversalCheckResult.ObstacleDepth >= 59.0f)
+			)
+			{
+				TraversalCheckResult.ActionType = ETraversalActionType::Mantle;
+			} else {
+				TraversalCheckResult.ActionType = ETraversalActionType::None;
+			}
+			
+		} else {
+			TraversalCheckResult.ActionType = ETraversalActionType::None;
+		}
+#else
 		TraversalCheckResult.ActionType = ETraversalActionType::None;
+#endif
 	}
 }
 
@@ -529,7 +538,7 @@ void AGAPlayer::ExecPerformTraversalAction(const FTraversalCheckResult& Traversa
 		Proxy->OnCompleted.AddDynamic(this, &AGAPlayer::EndPlayMontage);
 		
 		Proxy->OnInterrupted.AddDynamic(this, &AGAPlayer::EndPlayMontage);
-
+		
 		Proxy->OnBlendOut.AddDynamic(this, &AGAPlayer::EndPlayMontage);
 		
 		bDoingTraversalAction = true;
@@ -647,10 +656,15 @@ void AGAPlayer::UpdateWarpTarget()
 	}
 }
 
-void AGAPlayer::UpdateMovement()
-{
+//----------------------------------------------------------------------//
+//
+//! @brief 移動相度を更新
+//
+//----------------------------------------------------------------------//
+void AGAPlayer::UpdateMovement(){
+	// 移動速度を設定
 	GetCharacterMovement()->MaxWalkSpeed = CalculateMaxSpeed();
-
+	// 屈み状態での移動値を設定
 	GetCharacterMovement()->MaxWalkSpeedCrouched = GetCharacterMovement()->MaxWalkSpeed;
 }
 
@@ -709,31 +723,39 @@ void AGAPlayer::UpdateCamera(bool bInterpolate){
 }
 
 
-float AGAPlayer::CalculateMaxSpeed(){
+//----------------------------------------------------------------------//
+//
+//! @brief 最大スピード値を算出
+//
+//! @retval 最大スピード値
+//
+//! @note キャラクターの向きと進む方向が違う場合に移動スピードを変えてます。
+//! @note 各スピード値はX：最大 / Y : 中間 / Z : 最小値を設定する必要があります。
+//
+//----------------------------------------------------------------------//
+float AGAPlayer::CalculateMaxSpeed() const {
 	
 	FVector Velocity(GetCharacterMovement()->Velocity);
-	
+	// 速度とキャラクターの進行方向(ForwardVector)との角度を算出
 	float Direction = FMath::Abs(UKismetAnimationLibrary::CalculateDirection(Velocity, GetActorRotation()));
-	
+	// 向きに合ったスピード値を取得
 	float StafeSpeedMap = StrafeSpeedMapCurveObject->GetFloatValue(Direction);
 	
 	FVector Speed(FVector::ZeroVector);
-	
-	if(GetCharacterMovement()->IsCrouching() == true)
-	{
+	// 屈み状態かチェック
+	if(GetCharacterMovement()->IsCrouching() == true){
 		Speed = CrouchSpeed;
 	} else {
-		switch(Stride)
-		{
-			case EStride::Walk:		Speed = WalkSpeed; break;
-			case EStride::Run:		Speed = RunSpeed; break;
-			case EStride::Sprint:	Speed = SprintSpeed; break;
+		switch(Stride){
+			case EStride::Walk:		Speed = WalkSpeed;		break;
+			case EStride::Run:		Speed = RunSpeed;		break;
+			case EStride::Sprint:	Speed = SprintSpeed;	break;
 			default: break;
 		}
 	}
 	
 	float Result = 0.0f;
-	
+	// 向き毎の速度値をスピード値の範囲にマッピング
 	if(StafeSpeedMap < 1.0f){
 		Result = UKismetMathLibrary::MapRangeClamped(StafeSpeedMap, 0.0f, 1.0f, Speed.X, Speed.Y);	
 	} else {
@@ -743,20 +765,12 @@ float AGAPlayer::CalculateMaxSpeed(){
 	return Result;
 }
 
-
-
-EStride AGAPlayer::GetDesiredStride() const
-{
-	return EStride::Run;
-}
-
-
-float AGAPlayer::GetTraversalForwardTraceDistance() const
-{
+float AGAPlayer::GetTraversalForwardTraceDistance() const {
+	// キャラクターの移動速度を取得
 	FVector Velocity(GetMovementComponent()->Velocity);
-	
-	FVector Vector(UKismetMathLibrary::Quat_UnrotateVector(GetActorRotation().Quaternion(), Velocity));
-	
+	// アクターの向きの分逆回転させる
+	FVector Vector(GetActorRotation().Quaternion().UnrotateVector(Velocity));
+	// 正面方向のベクトルを0 - 500レンジから75 - 350レンジにマッピング
 	float Result = UKismetMathLibrary::MapRangeClamped(Vector.X, 0.0f, 500.0f, 75.0f, 350.0f);
 	
 	return Result;

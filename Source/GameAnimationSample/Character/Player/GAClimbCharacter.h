@@ -8,8 +8,6 @@
 
 class UMotionWarpingComponent;
 
-DECLARE_LOG_CATEGORY_EXTERN(Climb, Log, All);
-
 UCLASS()
 class GAMEANIMATIONSAMPLE_API AGAClimbCharacter : public ACharacter
 {
@@ -56,18 +54,14 @@ private:
 	FName TargetName = TEXT("");
 	//! @brief 掴まる位置の高さ
 	UPROPERTY(EditDefaultsOnly,Category="Climb")
-	float Height = 100.0f;
-	//! @brief 掴まる位置の調整値
-	UPROPERTY(EditDefaultsOnly, Category = "Climb")
-	float AdjustValue = 20.0f;
-	//! @brief AnimationMontage
-	UPROPERTY(EditDefaultsOnly,Category="Climb")
-	TObjectPtr<UAnimMontage> ClimbAnimMontage = nullptr;
+	float Height = 1.0f;
 
 	//!@brief Climb中のフラグ
 	bool IsClimb;
-	//! @brief 掴まる位置
-	FVector ClimbLocation;
+	//! @brief 衝突した壁のRotator
+	FRotator TargetRotator;
+	//! @brief 掴まる位置のTransform
+	FTransform ClimbTransform;
 
 	
 
