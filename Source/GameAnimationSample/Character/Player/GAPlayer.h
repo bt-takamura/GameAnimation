@@ -307,7 +307,11 @@ public:
 	/** Please add a variable description */
 	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category="GA|Input")
 	bool bWantsToAim = false;
-
+	
+	/** Please add a variable description */
+	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category="GA|Movement", meta=(BlueprintThreadSafe ))
+	FVector LandSpeed;
+	
 	/** Please add a variable description */
 	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category="Traversal")
 	FTraversalCheckResult TraversalResult;
