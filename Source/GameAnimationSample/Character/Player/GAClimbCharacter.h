@@ -36,6 +36,8 @@ public:
 	//! @brief Climbを試みる
 	UFUNCTION(BlueprintCallable)
 	UPARAM(DisplayName = "ClimbSuccess")bool TryClimbAction(UMotionWarpingComponent* MotionWarping = nullptr);
+	UFUNCTION(BlueprintCallable)
+	bool CanselClimb();
 
 private:
 	//! @brief 前方にオブジェクトがあるか判定する

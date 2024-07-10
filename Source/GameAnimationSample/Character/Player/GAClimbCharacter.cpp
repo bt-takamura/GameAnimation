@@ -32,22 +32,6 @@ void AGAClimbCharacter::BeginPlay()
 // Called every frame
 void AGAClimbCharacter::Tick(float DeltaTime)
 {
-	//! 掴まり動作のMotageの再生が終わったら、MovementModeをWalkingに戻す
-	if (IsClimb == true)
-	{
-		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-		if (AnimInstance != nullptr)
-		{
-			if (AnimInstance->Montage_IsPlaying(ClimbAnimMontage) == false)
-			{
-				UCharacterMovementComponent* MovementComp = GetCharacterMovement();
-				if (MovementComp != nullptr)
-				{
-					MovementComp->SetMovementMode(EMovementMode::MOVE_Walking);
-				}
-			}
-		}
-	}
 
 	Super::Tick(DeltaTime);
 
@@ -62,18 +46,6 @@ void AGAClimbCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 
 bool AGAClimbCharacter::TryClimbAction(UMotionWarpingComponent* MotionWarping)
 {
-	if (IsClimb == true)
-	{
-		//! Climbのフラグを下ろし、MovementModeをFallingにする
-		IsClimb = false;
-		UCharacterMovementComponent* MovementComp = GetCharacterMovement();
-		if (MovementComp != nullptr)
-		{
-			MovementComp->SetMovementMode(EMovementMode::MOVE_Falling);
-		}
-		return true;
-	}
-
 	bool Result = FindObjectInFront();
 	if (Result == false)
 	{
@@ -86,6 +58,24 @@ bool AGAClimbCharacter::TryClimbAction(UMotionWarpingComponent* MotionWarping)
 		return false;
 	}
 
+	return true;
+}
+
+bool AGAClimbCharacter::CanselClimb()
+{
+	if (IsClimb == false)
+	{
+		return false;
+	}
+
+	//! Climbのフラグを下ろし、MovementModeをFallingにする
+	IsClimb = false;
+	UCharacterMovementComponent* MovementComp = GetCharacterMovement();
+	if (MovementComp != nullptr)
+	{
+		MovementComp->SetMovementMode(EMovementMode::MOVE_Falling);
+		MovementComp->GravityScale = 1.0f;
+	}
 	return true;
 }
 
