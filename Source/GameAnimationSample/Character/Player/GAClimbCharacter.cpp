@@ -8,11 +8,14 @@
 #include "MotionWarpingComponent.h"
 #include "GameAnimationSample/Character/Animation/GAClimbTransform.h"
 
+#include "Kismet/KismetSystemLibrary.h"
+DEFINE_LOG_CATEGORY(Climb);
+
+
 // Sets default values
 AGAClimbCharacter::AGAClimbCharacter()
 :IsClimb(false)
-,TargetRotator(0.0f,0.0f,0.0f)
-,ClimbTransform()
+,ClimbLocation(0.0f, 0.0f, 0.0f)
 {
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
@@ -29,6 +32,23 @@ void AGAClimbCharacter::BeginPlay()
 // Called every frame
 void AGAClimbCharacter::Tick(float DeltaTime)
 {
+	//! 掴まり動作のMotageの再生が終わったら、MovementModeをWalkingに戻す
+	if (IsClimb == true)
+	{
+		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+		if (AnimInstance != nullptr)
+		{
+			if (AnimInstance->Montage_IsPlaying(ClimbAnimMontage) == false)
+			{
+				UCharacterMovementComponent* MovementComp = GetCharacterMovement();
+				if (MovementComp != nullptr)
+				{
+					MovementComp->SetMovementMode(EMovementMode::MOVE_Walking);
+				}
+			}
+		}
+	}
+
 	Super::Tick(DeltaTime);
 
 }
@@ -44,7 +64,7 @@ bool AGAClimbCharacter::TryClimbAction(UMotionWarpingComponent* MotionWarping)
 {
 	if (IsClimb == true)
 	{
-		//! Climb中はアクションを辞めて降りる
+		//! Climbのフラグを下ろし、MovementModeをFallingにする
 		IsClimb = false;
 		UCharacterMovementComponent* MovementComp = GetCharacterMovement();
 		if (MovementComp != nullptr)
@@ -57,14 +77,12 @@ bool AGAClimbCharacter::TryClimbAction(UMotionWarpingComponent* MotionWarping)
 	bool Result = FindObjectInFront();
 	if (Result == false)
 	{
-		//! 障害物が見つからない→Jumpを実施
 		return false;
 	}
 
 	Result = ClimbAction(MotionWarping);
 	if (Result == false)
 	{
-		//! Climbアクション失敗
 		return false;
 	}
 
@@ -86,38 +104,50 @@ bool AGAClimbCharacter::FindObjectInFront()
 		EDrawDebugTrace::ForDuration,
 		HitResult, true
 	);
-	//! 衝突したらターゲット情報を取得
 	if (Result == false)
 	{
 		return false;
 	}
 
-	//! 掴まる位置のTransfromを設定
-	TargetRotator = UKismetMathLibrary::MakeRotFromZ(HitResult.Normal);
-	ClimbTransform.SetRotation(TargetRotator.Quaternion());
-	FVector Upward(0.0f, 0.0f, Height);
-	ClimbTransform.SetLocation(GetActorLocation() + (GetActorForwardVector() + Upward)/* * 2.0f*/);
-	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-	if (AnimInstance == nullptr)
-	{
-		return false;
-	}
-	if (AnimInstance->GetClass()->ImplementsInterface(UGAClimbTransform::StaticClass()))
-	{
-		IGAClimbTransform::Execute_SetClimbTransform(AnimInstance, ClimbTransform);
-	}
+	//! 掴まる位置のLocationを設定、衝突位置から腕が埋まらない程度で手前にする(AdjustValue)
+	ClimbLocation = HitResult.ImpactPoint;
+	ClimbLocation = ClimbLocation + (HitResult.ImpactNormal * AdjustValue);
+	ClimbLocation.Z = Height;
 
 	return Result;
 }
 
 bool AGAClimbCharacter::ClimbAction(UMotionWarpingComponent* MotionWarping)
 {
-	//! MotionWarpingで移動
-	if (MotionWarping == nullptr)
+	//! 重力に反した動作のためMovementModeをFlyingに設定
+	UCharacterMovementComponent* MovementComp = GetCharacterMovement();
+	if (MovementComp == nullptr)
+	{
+		UE_LOG(Climb, Warning, TEXT("MovementComponent is nullptr."));
+		return false;
+	}
+	MovementComp->SetMovementMode(EMovementMode::MOVE_Flying);
+	
+	//! 掴まり動作のMontageを再生
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	if (AnimInstance == nullptr)
 	{
 		return false;
 	}
-	MotionWarping->AddOrUpdateWarpTargetFromLocationAndRotation(TargetName,ClimbTransform.GetLocation(), ClimbTransform.GetRotation().Rotator());
+	if (ClimbAnimMontage == nullptr)
+	{
+		UE_LOG(Climb, Warning, TEXT("ClimbAnimMontage is nullptr."));
+		return false;
+	}
+	AnimInstance->Montage_Play(ClimbAnimMontage);
+
+	//! MotionWarpingで移動
+	if (MotionWarping == nullptr)
+	{
+		UE_LOG(Climb, Warning, TEXT("MotionWarping is nullptr."));
+		return false;
+	}
+	MotionWarping->AddOrUpdateWarpTargetFromLocationAndRotation(TargetName, ClimbLocation, GetActorRotation());
 	
 	IsClimb = true;
 	return true;
