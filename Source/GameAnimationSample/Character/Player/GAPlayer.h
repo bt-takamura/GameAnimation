@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -148,124 +148,118 @@ class GAMEANIMATIONSAMPLE_API AGAPlayer : public ASNPlayerBase
 	GENERATED_BODY()
 
 public:
-
+	
+	//! @{@name デフォルトコンストラクタ
 	AGAPlayer(const FObjectInitializer& Initializer);
+	//! @}
 	
-	UFUNCTION(BlueprintCallable, Category="GA|Traversal")
-	void SetEnableTraversalAction(bool bEnable);
+	virtual void PossessedBy(AController* NewController) override;
 	
+	virtual void Tick(float DeltaSeconds) override;
+	
+	//! @{@name トラバーサルアクション中かチェック
 	UFUNCTION(BlueprintCallable, Category="GA|Traversal")
-	bool GetEnableTraversalAction() const ;
-
+	bool IsEnableTraversalAction() const ;
+	//! @}
+	
+	//! @{@name スプリングアームコンポーネントを取得
 	UFUNCTION(BlueprintPure, Category="GA|Components")
 	USpringArmComponent* GetSpringArmComponent();
-
+	//! @}
+	
+	//! @{@name モーションワーピングコンポーネントを取得
 	UFUNCTION(BlueprintPure, Category="GA|Components")
 	UMotionWarpingComponent* GetMotionWarpingComponent();
-
+	//! @}
+	
+	//! @{@name カメラコンポーネントを取得
 	UFUNCTION(BlueprintPure, Category="GA|Components")
 	UCameraComponent* GetCameraComponent();
-
+	//! @}
+	
 	UFUNCTION(BlueprintCallable, Category="GA|Traversal")
 	void ExecTraversalAction(float TraceForwardDistance, bool& TraversalCheckFailed, bool& MontageSelectionFailed);
-
-	UFUNCTION(BlueprintCallable, Category="GA|Traversal")
-	bool PerformFowardBlocks(UPARAM(ref) FTraversalCheckResult& TraversalCheckResult, float TraceForwardDistance, int DrawDebugLegel, float DrawDebugDuration);
 	
-	UFUNCTION(BlueprintCallable, Category="GA|Traversal")
-	bool PerformDecisionOnActorToEachEdge(UPARAM(ref) FTraversalCheckResult& TraversalCheckResult, int DrawDebugLegel);
-	
-	UFUNCTION(BlueprintCallable, Category="GA|Traversal")
-	bool PerformActorToFrontEdge(UPARAM(ref) FTraversalCheckResult& TraversalCheckResult, const FVector& HasRoomCheckFromLedgeLocation, int DrawDebugLegel);
-	
-	UFUNCTION(BlueprintCallable, Category="GA|Traversal")
-	void PerformObstacleDepth(UPARAM(ref) FTraversalCheckResult& TraversalCheckResult, const FVector& HasRoomCheckFrontLedgeLocation, const FVector& HasRoomCheckBackLedgeLocation, int DrawDebugLegel);
-		
-	UFUNCTION(BlueprintCallable, Category="GA|Traversal")
-	void PerformBackLedgeFloor(UPARAM(ref) FTraversalCheckResult& TraversalCheckResult, const FVector& HasRoomCheckBackLedgeLocation, int DrawDebugLegel);
-	
-	UFUNCTION(BlueprintCallable, Category="GA|Traversal")
-	void DetermineTraversalAction(UPARAM(ref) FTraversalCheckResult& TraversalCheckResult);
-
-	UFUNCTION(BlueprintCallable, Category="GA|Traversal")
-	void DrawDebugShapesAtLedgeLocation(const FTraversalCheckResult& TraversalCheckResult, int DrawDebugLevel, float DrawDebugDuration);
-	
-	UFUNCTION(BlueprintCallable, Category="GA|Traversal")
-	void DebugPrintTraversalResult(int DrawDebugLevel,UPARAM(ref) FTraversalCheckResult& TraversalCheckResult);
-	
-	UFUNCTION(BlueprintCallable, Category="GA|Traversal")
-	void ExecPerformTraversalAction(const FTraversalCheckResult& TraversalCheckResult);
-
-	UFUNCTION(BlueprintCallable, Category="GA|Traversal")
-	void UpdateWarpTarget();
-#if 1
-	UFUNCTION(BlueprintCallable, Category="GA|Traversal")
-	TArray<UObject*> EvaluateChooser(UPARAM(ref) FTraversalCheckResult& TraversalCheckResult);
-#endif
-	UFUNCTION(BlueprintCallable, Category="GA|Traversal")
-	bool PerformMotionMatch(TArray<UObject*> SearchAssets, UPARAM(ref) FTraversalCheckResult& TraversalCheckResult);
-	
-	UFUNCTION(BlueprintCallable, Category="GA|Traversal", BlueprintPure)
 	float GetTraversalForwardTraceDistance() const ;
-
-	UFUNCTION(BlueprintCallable, Category="GA|Traversal", BlueprintPure)
-	FVector2D GetMovementInputScaleValue(const FVector2D& Input) const ;
-
-	UFUNCTION(BlueprintCallable, Category="GA|Traversal", BlueprintPure)
-	EStride GetDesiredStride() const ;
 	
-	UFUNCTION(BlueprintCallable, Category="GA|Traversal")
-	void UpdateMovement();
-
-	UFUNCTION(BlueprintCallable, Category="GA|Traversal")
-	void UpdateRotation();
-
-	UFUNCTION(BlueprintCallable, Category="GA|Traversal")
-	void UpdateCamera(bool bInterpolate);
-
-	UFUNCTION(BlueprintCallable, Category="GA|Traversal", BlueprintPure)
-	float CalculateMaxSpeed();
-
-	UFUNCTION(BlueprintCallable, Category="GA|Traversal")
-	void SetInteractTransform(UPARAM(ref) FTraversalCheckResult& TraversalCheckResult);
+	FVector2D GetMovementInputScaleValue(const FVector2D& Input) const ;
 	
 private:
 	UFUNCTION()
 	void EndPlayMontage(FName NotifyName);
-
+	
+	bool PerformFowardBlocks(FTraversalCheckResult& TraversalCheckResult, float TraceForwardDistance, int DrawDebugLegel, float DrawDebugDuration);
+	
+	bool PerformDecisionOnActorToEachEdge(FTraversalCheckResult& TraversalCheckResult, int DrawDebugLegel);
+	
+	bool PerformActorToFrontEdge(FTraversalCheckResult& TraversalCheckResult, const FVector& HasRoomCheckFromLedgeLocation, int DrawDebugLegel);
+	
+	void PerformObstacleDepth(FTraversalCheckResult& TraversalCheckResult, const FVector& HasRoomCheckFrontLedgeLocation, const FVector& HasRoomCheckBackLedgeLocation, int DrawDebugLegel);
+	
+	void PerformBackLedgeFloor(FTraversalCheckResult& TraversalCheckResult, const FVector& HasRoomCheckBackLedgeLocation, int DrawDebugLegel);
+	
+	void DetermineTraversalAction(FTraversalCheckResult& TraversalCheckResult);
+	
+	void DrawDebugShapesAtLedgeLocation(const FTraversalCheckResult& TraversalCheckResult, int DrawDebugLevel, float DrawDebugDuration);
+	
+	void DebugPrintTraversalResult(int DrawDebugLevel, FTraversalCheckResult& TraversalCheckResult);
+	
+	void ExecPerformTraversalAction(const FTraversalCheckResult& TraversalCheckResult);
+	
+	void UpdateWarpTarget();
+#if 1
+	TArray<UObject*> EvaluateChooser(FTraversalCheckResult& TraversalCheckResult);
+#endif
+	
+	bool PerformMotionMatch(TArray<UObject*> SearchAssets, FTraversalCheckResult& TraversalCheckResult);
+	
+	//! @{@name 移動相度を更新
+	void UpdateMovement();
+	//! @}
+	
+	void UpdateRotation();
+	
+	void UpdateCamera(bool bInterpolate);
+	
+	//! @{@name 最大スピード値を算出
+	float CalculateMaxSpeed() const ;
+	//! @}
+	
+	void SetInteractTransform(FTraversalCheckResult& TraversalCheckResult);
+	
 public:
-	/** Please add a variable description */
+	//!< スプリングアームコンポーネント
 	UPROPERTY(BlueprintReadOnly, VisibleAnywhere, Category="GA|Default")
 	TObjectPtr<USpringArmComponent> SpringArmComponent;
-
-	/** Please add a variable description */
+	
+	//!< モーションワーピングコンポーネント
 	UPROPERTY(BlueprintReadOnly, VisibleAnywhere, Category="GA|Default")
 	TObjectPtr<UMotionWarpingComponent> MotionWarpingComponent;
-
-	/** Please add a variable description */
+	
+	//!< カメラコンポーネント
 	UPROPERTY(BlueprintReadOnly, VisibleAnywhere, Category="GA|Default")
 	TObjectPtr<UCameraComponent> CameraComponent;
-
+	
 	/** Please add a variable description */
 	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category="GA|Input")
 	TEnumAsByte<EAnalogueMovementBehavior> MovementStickMode = EAnalogueMovementBehavior::FixedSpeed_SingleStride;
-
+	
 	/** Please add a variable description */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="GA|Camera")
 	FSimpleCameraParams CamStyleFar;
-
+	
 	/** Please add a variable description */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="GA|Camera")
 	FSimpleCameraParams CamStyleClose;
-
+	
 	/** Please add a variable description */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="GA|Camera")
 	FSimpleCameraParams CamStyleAim;
-
+	
 	/** Please add a variable description */
 	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category="GA|Input")
 	float AnalogWalkRunThreshold = 0.7f;
-
+	
 	/** Please add a variable description */
 	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category="GA|Input")
 	bool bWantsToSprint = false;
@@ -277,23 +271,23 @@ public:
 	/** Please add a variable description */
 	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category="GA|Movement")
 	TObjectPtr<UCurveFloat> StrafeSpeedMapCurveObject;
-
+	
 	/** Please add a variable description */
 	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category="Movement")
 	TEnumAsByte<EStride> Stride;
-
+	
 	/** X = Forward Speed, Y = Strafe Speed, Z = Backwards Speed */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="GA|Movement")
 	FVector WalkSpeed;
-
+	
 	/** X = Forward Speed, Y = Strafe Speed, Z = Backwards Speed */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="GA|Movement")
 	FVector RunSpeed;
-
+	
 	/** X = Forward Speed, Y = Strafe Speed, Z = Backwards Speed */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="GA|Movement")
 	FVector SprintSpeed;
-
+	
 	/** Please add a variable description */
 	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category="GA|Input")
 	bool bWantsToStrafe = true;
@@ -311,29 +305,66 @@ public:
 	bool bJustLanded = false;
 
 	/** Please add a variable description */
-	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category="GA|Movement", meta=(BlueprintThreadSafe ))
-	FVector LandSpeed;
-
-	/** Please add a variable description */
 	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category="GA|Input")
 	bool bWantsToAim = false;
 
 	/** Please add a variable description */
 	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category="Traversal")
 	FTraversalCheckResult TraversalResult;
-
+	
 	/** Please add a variable description */
 	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category="GA|Traversal")
 	bool bDoingTraversalAction;
-
+	
 	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category="GA|Traversal")
 	TObjectPtr<UChooserTable> TraversalAnimationChooser = nullptr;
 
 protected:
 	virtual void BeginPlay() override;
-public:
-	
-	virtual void PossessedBy(AController* NewController) override;
-
-	virtual void Tick(float DeltaSeconds) override;
 };
+
+//----------------------------------------------------------------------//
+//
+//! @brief トラバーサルアクション中かチェック
+//
+//! @retval true  トラバーサル中
+//! @retval false トラバーサルしていない
+//
+//----------------------------------------------------------------------//
+FORCEINLINE bool AGAPlayer::IsEnableTraversalAction() const {
+	return bDoingTraversalAction;
+}
+
+//----------------------------------------------------------------------//
+//
+//! @brief スプリングアームコンポーネントを取得
+//
+//! @retval スプリングアームコンポーネント
+//
+//----------------------------------------------------------------------//
+FORCEINLINE USpringArmComponent* AGAPlayer::GetSpringArmComponent(){
+	return SpringArmComponent;
+}
+
+//----------------------------------------------------------------------//
+//
+//! @brief モーションワーピングコンポーネントを取得
+//
+//! @retval モーションワーピングコンポーネント
+//
+//----------------------------------------------------------------------//
+FORCEINLINE UMotionWarpingComponent* AGAPlayer::GetMotionWarpingComponent(){
+	return MotionWarpingComponent;
+}
+
+//----------------------------------------------------------------------//
+//
+//! @brief カメラコンポーネントを取得
+//
+//! @retval カメラコンポーネント
+//
+//----------------------------------------------------------------------//
+FORCEINLINE UCameraComponent* AGAPlayer::GetCameraComponent(){
+	return CameraComponent;
+}
+
