@@ -8,6 +8,8 @@
 
 class UMotionWarpingComponent;
 
+DECLARE_LOG_CATEGORY_EXTERN(Climb, Log, All);
+
 UCLASS()
 class GAMEANIMATIONSAMPLE_API AGAClimbCharacter : public ACharacter
 {
@@ -34,6 +36,8 @@ public:
 	//! @brief Climbを試みる
 	UFUNCTION(BlueprintCallable)
 	UPARAM(DisplayName = "ClimbSuccess")bool TryClimbAction(UMotionWarpingComponent* MotionWarping = nullptr);
+	UFUNCTION(BlueprintCallable)
+	bool CanselClimb();
 
 private:
 	//! @brief 前方にオブジェクトがあるか判定する
@@ -52,14 +56,18 @@ private:
 	FName TargetName = TEXT("");
 	//! @brief 掴まる位置の高さ
 	UPROPERTY(EditDefaultsOnly,Category="Climb")
-	float Height = 1.0f;
+	float Height = 100.0f;
+	//! @brief 掴まる位置の調整値
+	UPROPERTY(EditDefaultsOnly, Category = "Climb")
+	float AdjustValue = 20.0f;
+	//! @brief AnimationMontage
+	UPROPERTY(EditDefaultsOnly,Category="Climb")
+	TObjectPtr<UAnimMontage> ClimbAnimMontage = nullptr;
 
 	//!@brief Climb中のフラグ
 	bool IsClimb;
-	//! @brief 衝突した壁のRotator
-	FRotator TargetRotator;
-	//! @brief 掴まる位置のTransform
-	FTransform ClimbTransform;
+	//! @brief 掴まる位置
+	FVector ClimbLocation;
 
 	
 
