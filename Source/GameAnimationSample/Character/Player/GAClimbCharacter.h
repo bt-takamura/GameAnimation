@@ -66,9 +66,8 @@ private:
 
 	//!@brief Climb中のフラグ
 	bool IsClimb;
-	//! @brief 掴まる位置
-	FVector ClimbLocation;
-
+	//! @brief 掴まる時の姿勢
+	FTransform ClimbTransform;
 	
 
 };

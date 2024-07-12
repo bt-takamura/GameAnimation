@@ -15,7 +15,7 @@ DEFINE_LOG_CATEGORY(Climb);
 // Sets default values
 AGAClimbCharacter::AGAClimbCharacter()
 :IsClimb(false)
-,ClimbLocation(0.0f, 0.0f, 0.0f)
+,ClimbTransform()
 {
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
@@ -99,10 +99,14 @@ bool AGAClimbCharacter::FindObjectInFront()
 		return false;
 	}
 
-	//! 掴まる位置のLocationを設定、衝突位置から腕が埋まらない程度で手前にする(AdjustValue)
-	ClimbLocation = HitResult.ImpactPoint;
-	ClimbLocation = ClimbLocation + (HitResult.ImpactNormal * AdjustValue);
-	ClimbLocation.Z = Height;
+	//! 掴まる姿勢を設定
+	//! 衝突位置から腕が埋まらない程度で手前にする(AdjustValue)→後々IKで設定
+	FVector Location = HitResult.ImpactPoint;
+	Location = Location + (HitResult.ImpactNormal * AdjustValue);
+	Location.Z = Height;
+	ClimbTransform.SetLocation(Location);
+	FRotator Rotator = UKismetMathLibrary::Conv_VectorToRotator(HitResult.ImpactNormal * FVector(-1.0f, -1.0f, 0.0f));
+	ClimbTransform.SetRotation(Rotator.Quaternion());
 
 	return Result;
 }
@@ -110,6 +114,7 @@ bool AGAClimbCharacter::FindObjectInFront()
 bool AGAClimbCharacter::ClimbAction(UMotionWarpingComponent* MotionWarping)
 {
 	//! 重力に反した動作のためMovementModeをFlyingに設定
+	//! 動作的にはMovementModeのみでいいがTrajectoryのためにGravityScaleを0.fにする
 	UCharacterMovementComponent* MovementComp = GetCharacterMovement();
 	if (MovementComp == nullptr)
 	{
@@ -117,6 +122,7 @@ bool AGAClimbCharacter::ClimbAction(UMotionWarpingComponent* MotionWarping)
 		return false;
 	}
 	MovementComp->SetMovementMode(EMovementMode::MOVE_Flying);
+	MovementComp->GravityScale = 0.0f;
 	
 	//! 掴まり動作のMontageを再生
 	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
@@ -137,7 +143,7 @@ bool AGAClimbCharacter::ClimbAction(UMotionWarpingComponent* MotionWarping)
 		UE_LOG(Climb, Warning, TEXT("MotionWarping is nullptr."));
 		return false;
 	}
-	MotionWarping->AddOrUpdateWarpTargetFromLocationAndRotation(TargetName, ClimbLocation, GetActorRotation());
+	MotionWarping->AddOrUpdateWarpTargetFromLocationAndRotation(TargetName, ClimbTransform.GetLocation(), ClimbTransform.Rotator());
 	
 	IsClimb = true;
 	return true;
