@@ -99,6 +99,8 @@ bool AGAClimbCharacter::FindObjectInFront()
 		return false;
 	}
 
+	ClimbWallNormal = HitResult.ImpactNormal;
+
 	//! 掴まる姿勢を設定
 	//! 衝突位置から腕が埋まらない程度で手前にする(AdjustValue)→後々IKで設定
 	FVector Location = HitResult.ImpactPoint;

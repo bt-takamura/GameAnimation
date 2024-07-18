@@ -33,9 +33,13 @@ public:
 	//! @brief Climbフラグの取得
 	UFUNCTION(BlueprintCallable)
 	bool GetIsClimb() const { return IsClimb; }
+	//! @brief 掴まった壁の法線の取得
+	UFUNCTION(BlueprintCallable)
+	FVector GetClimbWallNormal() const { return ClimbWallNormal; }
 	//! @brief Climbを試みる
 	UFUNCTION(BlueprintCallable)
 	UPARAM(DisplayName = "ClimbSuccess")bool TryClimbAction(UMotionWarpingComponent* MotionWarping = nullptr);
+	//! @brief Climb動作を終了する
 	UFUNCTION(BlueprintCallable)
 	bool CanselClimb();
 
@@ -68,6 +72,8 @@ private:
 	bool IsClimb;
 	//! @brief 掴まる時の姿勢
 	FTransform ClimbTransform;
+	//! @brief 掴まった壁の法線
+	FVector ClimbWallNormal;
 	
 
 };
