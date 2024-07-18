@@ -18,6 +18,7 @@
 #include "Chooser/Public/ChooserFunctionLibrary.h"
 #include "GameAnimationSample/Character/Animation/GAMotionMatchingAnimInstance.h"
 #include "GameAnimationSample/Environment/GALevelBlock.h"
+#include "GameAnimationSample/Environment/GATraversalBlock.h"
 #include "Kismet/GameplayStatics.h"
 #include "Utility/SNUtility.h"
 
@@ -168,7 +169,20 @@ bool AGAPlayer::PerformFowardBlocks(FTraversalCheckResult& TraversalCheckResult,
 			
 			DrawDebugShapesAtLedgeLocation(TraversalCheckResult, DrawDebugLegel, DrawDebugDuration);
 		} else {
-			Result = false;
+			
+			AGATraversalBlock* TraversalBlock = Cast<AGATraversalBlock>(HitResult.GetActor());
+			
+			if(TraversalBlock != nullptr){
+				
+				TraversalCheckResult.HitComponent = HitResult.GetComponent();
+				
+				TraversalBlock->GetLedgeTransform(HitResult.ImpactPoint, ActorLocation, TraversalCheckResult);
+				
+				DrawDebugShapesAtLedgeLocation(TraversalCheckResult, DrawDebugLegel, DrawDebugDuration);
+				
+			} else {
+				Result = false;
+			}
 		}
 	}
 	
@@ -245,7 +259,7 @@ bool AGAPlayer::PerformActorToFrontEdge(FTraversalCheckResult& TraversalCheckRes
 	
 	FVector ActorLocation(GetActorLocation());
 	
-	UKismetSystemLibrary::CapsuleTraceSingle(GetWorld(), ActorLocation, HasRoomCheckFromLedgeLocation, CapsuleRadius, CapsuleHalfHeight, UEngineTypes::ConvertToTraceType(ECC_Visibility), false, TArray<AActor*>(), DebugTrace, HitResult, true);
+	UKismetSystemLibrary::CapsuleTraceSingle(GetWorld(), ActorLocation, HasRoomCheckFromLedgeLocation, CapsuleRadius, CapsuleHalfHeight, UEngineTypes::ConvertToTraceType(ECC_Visibility), false, TArray<AActor*>(), DebugTrace, HitResult, true, FLinearColor::Blue, FLinearColor::Blue);
 	
 	bool Result = ((HitResult.bBlockingHit == false) && (HitResult.bStartPenetrating == false)) ? true : false;
 	
@@ -272,7 +286,7 @@ void AGAPlayer::PerformObstacleDepth(FTraversalCheckResult& TraversalCheckResult
 	
 	EDrawDebugTrace::Type DebugTrace = (DrawDebugLegel >= 3) ? EDrawDebugTrace::ForDuration : EDrawDebugTrace::None;
 	// 障害物の後ろに物があるかチェック
-	bool Result = UKismetSystemLibrary::CapsuleTraceSingle(GetWorld(), HasRoomCheckFrontLedgeLocation, HasRoomCheckBackLedgeLocation, CapsuleRadius, CapsuleHalfHeight, UEngineTypes::ConvertToTraceType(ECC_Visibility), false, TArray<AActor*>(), DebugTrace, HitResult, true);
+	bool Result = UKismetSystemLibrary::CapsuleTraceSingle(GetWorld(), HasRoomCheckFrontLedgeLocation, HasRoomCheckBackLedgeLocation, CapsuleRadius, CapsuleHalfHeight, UEngineTypes::ConvertToTraceType(ECC_Visibility), false, TArray<AActor*>(), DebugTrace, HitResult, true, FLinearColor::White, FLinearColor::White);
 	
 	if(Result != true){
 		// ステップ3.5：もし余裕があれば、前後のレッジの位置の差を利用して障害物の深さを保存する。
@@ -307,7 +321,7 @@ void AGAPlayer::PerformBackLedgeFloor(FTraversalCheckResult& TraversalCheckResul
 
 	EDrawDebugTrace::Type DebugTrace = (DrawDebugLegel >= 3) ? EDrawDebugTrace::ForDuration : EDrawDebugTrace::None;
 	
-	UKismetSystemLibrary::CapsuleTraceSingle(GetWorld(), HasRoomCheckBackLedgeLocation, EndPoint, CapsuleRadius, CapsuleHalfHeight, UEngineTypes::ConvertToTraceType(ECC_Visibility), false, TArray<AActor*>(), DebugTrace, HitResult, true);
+	UKismetSystemLibrary::CapsuleTraceSingle(GetWorld(), HasRoomCheckBackLedgeLocation, EndPoint, CapsuleRadius, CapsuleHalfHeight, UEngineTypes::ConvertToTraceType(ECC_Visibility), false, TArray<AActor*>(), DebugTrace, HitResult, true, FLinearColor::Red, FLinearColor::Red);
 
 	if(HitResult.bBlockingHit == true)
 	{
