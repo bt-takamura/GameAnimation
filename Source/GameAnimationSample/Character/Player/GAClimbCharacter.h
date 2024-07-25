@@ -4,14 +4,13 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "GameAnimationSample/Character/Player/Interface/ClimbActionInterface.h"
 #include "GAClimbCharacter.generated.h"
 
-class UMotionWarpingComponent;
-
-DECLARE_LOG_CATEGORY_EXTERN(Climb, Log, All);
+class UClimbActionComponent;
 
 UCLASS()
-class GAMEANIMATIONSAMPLE_API AGAClimbCharacter : public ACharacter
+class GAMEANIMATIONSAMPLE_API AGAClimbCharacter : public ACharacter, public IClimbActionInterface
 {
 	GENERATED_BODY()
 
@@ -30,50 +29,20 @@ public:
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
-	//! @brief Climbフラグの取得
-	UFUNCTION(BlueprintCallable)
-	bool GetIsClimb() const { return IsClimb; }
-	//! @brief 掴まった壁の法線の取得
-	UFUNCTION(BlueprintCallable)
-	FVector GetClimbWallNormal() const { return ClimbWallNormal; }
-	//! @brief Climbを試みる
-	UFUNCTION(BlueprintCallable)
-	UPARAM(DisplayName = "ClimbSuccess")bool TryClimbAction(UMotionWarpingComponent* MotionWarping = nullptr);
-	//! @brief Climb動作を終了する
-	UFUNCTION(BlueprintCallable)
-	bool CanselClimb();
+	//!< Climbの機能コンポーネント
+	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "Climb")
+	TObjectPtr<UClimbActionComponent> ClimbActionComponent = nullptr;
+
+	//! @{@name Climb開始時に掴む姿勢の設定
+	virtual void SetClimbGraspTransform(FHitResult& HitResult, FTransform& OutTransform) override;
+	//! @}
+	
+	//! @{@name Climb中の移動処理
+	virtual void ClimbMove(const FVector2D& InputValue) override;
+	//! @}
 
 private:
-	//! @brief 前方にオブジェクトがあるか判定する
-	bool FindObjectInFront();
-	//! @brief Climbを行う
-	bool ClimbAction(UMotionWarpingComponent* MotionWarping);
-
-	//! @brief トレースするタイプ
-	UPROPERTY(EditDefaultsOnly, Category="Climb")
-	TEnumAsByte<ETraceTypeQuery> TraceChannel = ETraceTypeQuery::TraceTypeQuery1;
-	//! @brief トレース判定する距離
-	UPROPERTY(EditDefaultsOnly, Category="Climb")
-	float TraceDistance = 50.0f;
-	//! @brief MotionWarpingのTargetName
-	UPROPERTY(EditDefaultsOnly,Category="Climb")
-	FName TargetName = TEXT("");
-	//! @brief 掴まる位置の高さ
-	UPROPERTY(EditDefaultsOnly,Category="Climb")
-	float Height = 100.0f;
-	//! @brief 掴まる位置の調整値
+	//!< 掴まる位置の高さ
 	UPROPERTY(EditDefaultsOnly, Category = "Climb")
-	float AdjustValue = 20.0f;
-	//! @brief AnimationMontage
-	UPROPERTY(EditDefaultsOnly,Category="Climb")
-	TObjectPtr<UAnimMontage> ClimbAnimMontage = nullptr;
-
-	//!@brief Climb中のフラグ
-	bool IsClimb;
-	//! @brief 掴まる時の姿勢
-	FTransform ClimbTransform;
-	//! @brief 掴まった壁の法線
-	FVector ClimbWallNormal;
-	
-
+	float ClimbHeight = 100.0f;
 };
