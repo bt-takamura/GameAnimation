@@ -73,6 +73,7 @@ UPARAM(DisplayName = "ClimbSuccess") bool UClimbActionComponent::TryAction(UMoti
 		return false;
 	}
 
+	IsClimb = true;
 	return true;
 }
 
@@ -85,6 +86,19 @@ UPARAM(DisplayName = "ClimbSuccess") bool UClimbActionComponent::TryAction(UMoti
 //----------------------------------------------------------------------//
 void UClimbActionComponent::MoveAction(const FVector2D& InputValue)
 {
+	//! 掴まる動作時(Montage再生中)は移動しない
+	ACharacter* Character = Cast<ACharacter>(GetOwner());
+	if (Character == nullptr)
+	{
+		UE_LOG(ClimbComp, Warning, TEXT("Could not cast in ACharacter."));
+		return;
+	}
+	UAnimInstance* AnimInstance = Character->GetMesh()->GetAnimInstance();
+	if (AnimInstance->Montage_IsPlaying(ClimbAnimMontage))
+	{
+		return;
+	}
+
 	bool PreIsClimbWallEdge = IsClimbWallEdge;
 	//! 壁の端の判定を取る
 	IsClimbWallEdge = CheckWallEdge(InputValue);
@@ -96,12 +110,6 @@ void UClimbActionComponent::MoveAction(const FVector2D& InputValue)
 	if ((IsClimbWallEdge == false && PreIsClimbWallEdge == true) || IsCloseToEdge == true)
 	{
 		//! 端に来たら動作を止める
-		ACharacter* Character = Cast<ACharacter>(GetOwner());
-		if (Character == nullptr)
-		{
-			UE_LOG(ClimbComp, Warning, TEXT("Could not cast in ACharacter."));
-			return;
-		}
 		Character->GetCharacterMovement()->StopMovementImmediately();
 
 		//! 壁の向きを確認する
@@ -318,7 +326,6 @@ bool UClimbActionComponent::GraspWall(UMotionWarpingComponent* MotionWarping)
 	}
 	MotionWarping->AddOrUpdateWarpTargetFromLocationAndRotation(TargetName, ClimbTransform.GetLocation() + (ClimbWallNormal * AdjustValue), ClimbTransform.Rotator());
 
-	IsClimb = true;
 	return true;
 }
 

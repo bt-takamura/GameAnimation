@@ -55,7 +55,6 @@ void AGAClimbCharacter::SetClimbGraspTransform(FHitResult& HitResult, FTransform
 {
 	//! 衝突位置から腕が埋まらないよう調整(AdjustValue)
 	FVector Location = HitResult.ImpactPoint;
-	Location = Location;
 	Location.Z = GetActorLocation().Z + ClimbHeight;
 	FRotator Rotator = UKismetMathLibrary::Conv_VectorToRotator(HitResult.ImpactNormal * FVector(-1.0f, -1.0f, 0.0f));
 	OutTransform.SetRotation(Rotator.Quaternion());
