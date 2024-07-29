@@ -1,0 +1,8 @@
+{
+	"BuildId": "27405482",
+	"Modules": 
+	{
+		"BTStd": "UnrealEditor-BTStd.dll",
+		"BTStdEditor": "UnrealEditor-BTStdEditor.dll"
+	}
+}

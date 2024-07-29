@@ -1,0 +1,8 @@
+{
+	"BuildId": "33043543",
+	"Modules": 
+	{
+		"SNPlugin": "UnrealEditor-SNPlugin.dll",
+		"SNPluginEditor": "UnrealEditor-SNPluginEditor.dll"
+	}
+}
