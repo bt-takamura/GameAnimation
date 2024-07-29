@@ -24,12 +24,14 @@ class GAMEANIMATIONSAMPLE_API IClimbActionInterface
 public:
 
 	//! @{@name Climb開始時の掴まる姿勢の設定
+	//! 
 	//! @param HitResult	TryAction時の衝突判定の結果
 	//! @param OutTransform 設定する掴まる姿勢情報
 	virtual void SetClimbGraspTransform(FHitResult& HitResult, FTransform& OutTransform) = 0;
 	//! @}
 
 	//! @{@name Climb中の移動処理
+	//! 
 	//! @param InputValue	コントローラー3Dスティック入力値
 	virtual void ClimbMove(const FVector2D& InputValue) = 0;
 	//! @}
