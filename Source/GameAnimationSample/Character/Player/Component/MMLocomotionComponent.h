@@ -96,7 +96,7 @@ public:
 };
 
 /**
- *	MotionMatchingを使用した移動処理
+ *	モーションマッチングを使用した移動処理
  *	MM = MotionMatching
  */
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
@@ -108,11 +108,6 @@ public:
 	// Sets default values for this component's properties
 	UMMLocomotionComponent(const FObjectInitializer& Initializer);
 
-protected:
-	// Called when the game starts
-	virtual void BeginPlay() override;
-
-public:	
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 	
@@ -198,6 +193,10 @@ public:
 	//! @{@name 前方にトレースする距離を算出
 	float GetTraversalForwardTraceDistance() const;
 	//! @}
+
+protected:
+	// Called when the game starts
+	virtual void BeginPlay() override;
 
 private:
 	//! @{@name 進行方向にBlockがあるかチェック

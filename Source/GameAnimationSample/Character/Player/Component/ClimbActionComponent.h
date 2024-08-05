@@ -10,6 +10,9 @@ class UMotionWarpingComponent;
 
 DECLARE_LOG_CATEGORY_EXTERN(ClimbComp, Log, All);
 
+/**
+ *	クライム(よじ登る)アクションの処理
+ */
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class GAMEANIMATIONSAMPLE_API UClimbActionComponent : public UActorComponent
 {
@@ -19,11 +22,6 @@ public:
 	// Sets default values for this component's properties
 	UClimbActionComponent(const FObjectInitializer& Initializer);
 
-protected:
-	// Called when the game starts
-	virtual void BeginPlay() override;
-
-public:	
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
@@ -62,6 +60,10 @@ public:
 	void ResetVelocity();
 	//! @}
 	
+protected:
+	// Called when the game starts
+	virtual void BeginPlay() override;
+
 private:
 	//! @{@name 前方にオブジェクトがあるか判定する
 	bool FindObjectInFront();

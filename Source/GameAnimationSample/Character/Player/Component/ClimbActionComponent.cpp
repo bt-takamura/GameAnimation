@@ -56,6 +56,13 @@ void UClimbActionComponent::TickComponent(float DeltaTime, ELevelTick TickType, 
 //----------------------------------------------------------------------//
 UPARAM(DisplayName = "ClimbSuccess") bool UClimbActionComponent::TryAction(UMotionWarpingComponent* MotionWarping)
 {
+	ACharacter* Character = Cast<ACharacter>(GetOwner());
+	if (Character == nullptr)
+	{
+		UE_LOG(ClimbComp, Warning, TEXT("Character is nullptr."));
+		return false;
+	}
+
 	bool Result = FindObjectInFront();
 	if (Result == false)
 	{
@@ -85,7 +92,7 @@ void UClimbActionComponent::MoveAction(const FVector2D& InputValue)
 	ACharacter* Character = Cast<ACharacter>(GetOwner());
 	if (Character == nullptr)
 	{
-		UE_LOG(ClimbComp, Warning, TEXT("Could not cast in ACharacter."));
+		UE_LOG(ClimbComp, Warning, TEXT("Character is nullptr."));
 		return;
 	}
 	UAnimInstance* AnimInstance = Character->GetMesh()->GetAnimInstance();
@@ -150,7 +157,7 @@ UPARAM(DisplayName = "CanselSuccess") bool UClimbActionComponent::CanselAction()
 	ACharacter* Character = Cast<ACharacter>(GetOwner());
 	if (Character == nullptr)
 	{
-		UE_LOG(ClimbComp, Warning, TEXT("Could not cast in ACharacter."));
+		UE_LOG(ClimbComp, Warning, TEXT("Character is nullptr."));
 		return false;
 	}
 	Character->GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Falling);
@@ -180,7 +187,7 @@ float UClimbActionComponent::CalcMaxFlySpeed() const
 	ACharacter* Character = Cast<ACharacter>(GetOwner());
 	if (Character == nullptr)
 	{
-		UE_LOG(ClimbComp, Warning, TEXT("Could not cast in ACharacter."));
+		UE_LOG(ClimbComp, Warning, TEXT("Character is nullptr."));
 		return Speed;
 	}
 	float Value = UKismetAnimationLibrary::CalculateDirection(Character->GetCharacterMovement()->Velocity, Character->GetActorRotation());
@@ -215,7 +222,7 @@ void UClimbActionComponent::SetClimbRotation() const
 	ACharacter* Character = Cast<ACharacter>(GetOwner());
 	if (Character == nullptr)
 	{
-		UE_LOG(ClimbComp, Warning, TEXT("Could not cast in ACharacter."));
+		UE_LOG(ClimbComp, Warning, TEXT("Character is nullptr."));
 		return;
 	}
 	Character->GetCharacterMovement()->bUseControllerDesiredRotation = false;
@@ -228,7 +235,7 @@ void UClimbActionComponent::ResetVelocity()
 	ACharacter* Character = Cast<ACharacter>(GetOwner());
 	if (Character == nullptr)
 	{
-		UE_LOG(ClimbComp, Warning, TEXT("Could not cast in ACharacter."));
+		UE_LOG(ClimbComp, Warning, TEXT("Character is nullptr."));
 		return;
 	}
 	Character->GetCharacterMovement()->Velocity = FVector::ZeroVector;
@@ -250,11 +257,7 @@ bool UClimbActionComponent::FindObjectInFront()
 	
 	//! CapsuleCompの情報取得
 	ACharacter* Character = Cast<ACharacter>(GetOwner());
-	if (Character == nullptr)
-	{
-		UE_LOG(ClimbComp, Warning, TEXT("Could not cast in ACharacter."));
-		return false;
-	}
+
 	float CapsuleRadius = Character->GetCapsuleComponent()->GetScaledCapsuleRadius();
 	float CapsuleHalfHeight = Character->GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
 
@@ -296,11 +299,7 @@ bool UClimbActionComponent::FindObjectInFront()
 bool UClimbActionComponent::GraspWall(UMotionWarpingComponent* MotionWarping)
 {
 	ACharacter* Character = Cast<ACharacter>(GetOwner());
-	if (Character == nullptr)
-	{
-		UE_LOG(ClimbComp, Warning, TEXT("Could not cast in ACharacter."));
-		return false;
-	}
+
 	//! 重力に反した動作のためMovementModeをFlyingに設定
 	//! 動作的にはMovementModeのみでいいがTrajectoryのためにGravityScaleを0.fにする
 	Character->GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Flying);
@@ -321,6 +320,7 @@ bool UClimbActionComponent::GraspWall(UMotionWarpingComponent* MotionWarping)
 		UE_LOG(ClimbComp, Warning, TEXT("MotionWarping is nullptr."));
 		return false;
 	}
+	//! 衝突位置から腕が埋まらないよう調整(AdjustValue)
 	MotionWarping->AddOrUpdateWarpTargetFromLocationAndRotation(TargetName, ClimbTransform.GetLocation() + (ClimbWallNormal * AdjustValue), ClimbTransform.Rotator());
 
 	return true;
@@ -357,11 +357,7 @@ bool UClimbActionComponent::CheckWallEdge(const FVector2D& InputValue)
 {
 	//! CapsuleCompの情報取得
 	ACharacter* Character = Cast<ACharacter>(GetOwner());
-	if (Character == nullptr)
-	{
-		UE_LOG(ClimbComp, Warning, TEXT("Could not cast in ACharacter."));
-		return false;
-	}
+
 	float CapsuleRadius = Character->GetCapsuleComponent()->GetScaledCapsuleRadius();
 	float CapsuleHalfHeight = Character->GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
 
@@ -418,11 +414,7 @@ bool UClimbActionComponent::CheckDistanceToWall()
 {
 	//! CapsuleCompの情報取得
 	ACharacter* Character = Cast<ACharacter>(GetOwner());
-	if (Character == nullptr)
-	{
-		UE_LOG(ClimbComp, Warning, TEXT("Could not cast in ACharacter."));
-		return false;
-	}
+
 	float CapsuleRadius = Character->GetCapsuleComponent()->GetScaledCapsuleRadius();
 	
 	//! 壁端までの距離を計算する
@@ -449,11 +441,7 @@ bool UClimbActionComponent::CheckDistanceToWall()
 bool UClimbActionComponent::CheckWallDirection()
 {
 	ACharacter* Character = Cast<ACharacter>(GetOwner());
-	if (Character == nullptr)
-	{
-		UE_LOG(ClimbComp, Warning, TEXT("Could not cast in ACharacter."));
-		return false;
-	}
+
 	//! 衝突した壁の法線とPlayerの上方向のVectorのとの内積から角度を求める
 	float Dot = UKismetMathLibrary::Dot_VectorVector(ImpactWallNormal, Character->GetActorUpVector());
 	float Degree = UKismetMathLibrary::DegAcos(Dot);
@@ -476,11 +464,7 @@ void UClimbActionComponent::Turn()
 	ClimbWallNormal = ImpactWallNormal;
 
 	ACharacter* Character = Cast<ACharacter>(GetOwner());
-	if (Character == nullptr)
-	{
-		UE_LOG(ClimbComp, Warning, TEXT("Could not cast in ACharacter."));
-		return;
-	}
+
 	float CapsuleRadius = Character->GetCapsuleComponent()->GetScaledCapsuleRadius();
 	//! 衝突判定の取れた位置にTransformで移動
 	FRotator Rotator = UKismetMathLibrary::MakeRotFromX(UKismetMathLibrary::NegateVector(ImpactWallNormal));
@@ -497,11 +481,7 @@ void UClimbActionComponent::Turn()
 void UClimbActionComponent::GoUp()
 {
 	ACharacter* Character = Cast<ACharacter>(GetOwner());
-	if (Character == nullptr)
-	{
-		UE_LOG(ClimbComp, Warning, TEXT("Could not cast in ACharacter."));
-		return;
-	}
+
 	float CapsuleHalfHeight = Character->GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
 	Character->SetActorLocation(ImpactWallLocation + (ImpactWallNormal * CapsuleHalfHeight));
 
