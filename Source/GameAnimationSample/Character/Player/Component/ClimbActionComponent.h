@@ -17,7 +17,7 @@ class GAMEANIMATIONSAMPLE_API UClimbActionComponent : public UActorComponent
 
 public:	
 	// Sets default values for this component's properties
-	UClimbActionComponent();
+	UClimbActionComponent(const FObjectInitializer& Initializer);
 
 protected:
 	// Called when the game starts
@@ -129,30 +129,30 @@ private:
 	TObjectPtr<UCurveFloat> SpeedMapCurve = nullptr;
 
 	//!< Climb中の最高速度設定値
-	//! @brief X = ForwardSpeed, Y = StrafeSpeed, Z = BackwardsSpeed
+	//! @brief X = 最大値 / Y = 中間値 / Z = 最小値
 	UPROPERTY(EditDefaultsOnly, Category = "Movement")
-	FVector ClimbSpeeds = FVector(0.0f, 0.0f, 0.0f);
+	FVector ClimbSpeeds = FVector::ZeroVector;
 
 	//!< MotionWarpingのTargetName
-	const FName TargetName;
+	const FName TargetName = TEXT("Climb");
 
 	//!< Climb中のフラグ
-	bool IsClimb;
+	bool IsClimb = false;
 
 	//!< 壁の端があるかのフラグ
-	bool IsClimbWallEdge;
+	bool IsClimbWallEdge = false;
 
 	//!< 掴まった壁の法線
-	FVector ClimbWallNormal;
+	FVector ClimbWallNormal = FVector::ZeroVector;
 
 	//!< 掴まる時の姿勢
 	FTransform ClimbTransform;
 
 	//!< 衝突判定の取れたの壁の座標
-	FVector ImpactWallLocation;
+	FVector ImpactWallLocation = FVector::ZeroVector;
 
 	//!< 衝突判定の取れたの壁の法線
-	FVector ImpactWallNormal;
+	FVector ImpactWallNormal = FVector::ZeroVector;
 
 };
 
@@ -168,3 +168,4 @@ FORCEINLINE bool UClimbActionComponent::GetIsClimb() const
 {
 	return IsClimb;
 }
+

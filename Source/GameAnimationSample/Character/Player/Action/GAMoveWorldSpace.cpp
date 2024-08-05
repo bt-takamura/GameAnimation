@@ -4,63 +4,35 @@
 #include "GameAnimationSample/Character/Player/Action/GAMoveWorldSpace.h"
 
 #include "SNDef.h"
-#include "GameAnimationSample/Character/Player/GAPlayer.h"
+#include "GameFramework/Character.h"
+#include "GameAnimationSample/Character/Player/Component/MMLocomotionComponent.h"
 
 void UGAMoveWorldSpace::ExecAction(const FInputActionValue& InputActionValue)
 {
 	Super::ExecAction(InputActionValue);
 
-	AGAPlayer* Player(GetOwner<AGAPlayer>());
-
-	if(Player == nullptr)
+	ACharacter* Character = GetOwner<ACharacter>();
+	if (Character == nullptr)
 	{
-		SNPLUGIN_LOG(TEXT("Player is nullptr."));
+		SNPLUGIN_LOG(TEXT("GAMoveWorldSpace : Character is nullptr."));
 
 		return;
 	}
-	
+
+	UMMLocomotionComponent* MMLocomotionComponent = Character->GetComponentByClass<UMMLocomotionComponent>();
+	if (MMLocomotionComponent == nullptr)
+	{
+		SNPLUGIN_LOG(TEXT("GAMoveWorldSpace : MMLocomotionComponent is nullptr."));
+		return;
+	}
 	FVector2D Vector(InputActionValue[0], InputActionValue[1]);
 
 	Vector.Normalize();
 
-	Player->AddMovementInput(FVector(0.0f, 1.0f, 0.0f), Vector.X);
+	Character->AddMovementInput(FVector(0.0f, 1.0f, 0.0f), Vector.X);
 
-	Player->AddMovementInput(FVector(1.0f, 0.0f, 0.0f), Vector.Y);
+	Character->AddMovementInput(FVector(1.0f, 0.0f, 0.0f), Vector.Y);
 
-	{
-		bool FullMovementInput = false;
-		
-		float InputMag = Vector.Length();
+	MMLocomotionComponent->SetupStride(Vector);
 
-		if(InputMag >= Player->AnalogWalkRunThreshold)
-		{
-			FullMovementInput = true;
-		} else
-		{
-			if((Player->MovementStickMode == EAnalogueMovementBehavior::FixedSpeed_SingleStride)
-			||(Player->MovementStickMode == EAnalogueMovementBehavior::VariableSpeed_SingleStride)){
-				FullMovementInput = true;
-			}
-		}
-
-		if(Player->bWantsToSprint == true)
-		{
-			Player->Stride = EStride::Run;
-		} else
-		{
-			if(Player->bWantsToWalk == true)
-			{
-				Player->Stride = EStride::Walk;
-			} else
-			{
-				if(FullMovementInput == true)
-				{
-					Player->Stride = EStride::Run;
-				} else
-				{
-					Player->Stride = EStride::Walk;
-				}
-			}
-		}
-	}
 }

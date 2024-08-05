@@ -4,23 +4,29 @@
 #include "GameAnimationSample/Character/Player/Action/GAWalkAction.h"
 
 #include "SNDef.h"
-#include "GameAnimationSample/Character/Player/GAPlayer.h"
+#include "GameFramework/Character.h"
+#include "GameAnimationSample/Character/Player/Component/MMLocomotionComponent.h"
 
 void UGAWalkAction::ExecAction(const FInputActionValue& InputActionValue)
 {
 	Super::ExecAction(InputActionValue);
 
-	AGAPlayer* Player(GetOwner<AGAPlayer>());
-
-	if(Player == nullptr)
+	ACharacter* Character = GetOwner<ACharacter>();
+	if (Character == nullptr)
 	{
-		SNPLUGIN_LOG(TEXT("Player is nullptr."));
-
+		SNPLUGIN_LOG(TEXT("Character is nullptr."));
+		return;
+	}
+	UMMLocomotionComponent* MMLocomotionComponent = Character->GetComponentByClass<UMMLocomotionComponent>();
+	if (MMLocomotionComponent == nullptr)
+	{
+		SNPLUGIN_LOG(TEXT("MMLocomotion is nullptr."));
 		return;
 	}
 
-	if(Player->bWantsToSprint != true)
+	if (MMLocomotionComponent->GetWantsToSprint() != true)
 	{
-		Player->bWantsToWalk = (Player->bWantsToWalk != true);
+		bool Flag = (MMLocomotionComponent->GetWantsToWalk() != true);
+		MMLocomotionComponent->SetWantsToWalk(Flag);
 	}
 }

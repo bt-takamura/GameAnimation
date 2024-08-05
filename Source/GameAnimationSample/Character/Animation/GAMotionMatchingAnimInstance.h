@@ -13,7 +13,6 @@
 #include "GAMotionMatchingAnimInstance.generated.h"
 
 class UChooserTable;
-class AGAPlayer;
 class UCharacterMovementComponent;
 struct FPoseSearchTrajectory_WorldCollisionResults;
 struct FPoseSearchQueryTrajectory;
@@ -49,6 +48,12 @@ public:
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category="GA|Animation|MotionMatching|MovementAnalysis", meta=(BlueprintThreadSafe))
 	bool IsMoving() const ;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "GA|Animation|MotionMatching|MovementAnalysis", meta = (BlueprintThreadSafe))
+	bool IsStarting() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "GA|Animation|MotionMatching|MovementAnalysis", meta = (BlueprintThreadSafe))
+	bool IsPivoting() const;
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category="GA|Animation|MotionMatching|MovementAnalysis", meta=(BlueprintThreadSafe))
 	bool ShouldSpinTransition() const ;
@@ -120,10 +125,10 @@ public:
 	TObjectPtr<UChooserTable> AnimationSearchChooser = nullptr;
 	
 	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category="GA|Refarence")
-	AGAPlayer* OwnerCharacter;
+	ACharacter* OwnerCharacter = nullptr;
 
 	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category="GA|Refarence")
-	UCharacterMovementComponent* OwnerMovementComponent;
+	UCharacterMovementComponent* OwnerMovementComponent = nullptr;
 	
 	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category="GA|EssentialValues")
 	FTransform CharacterTransform = FTransform::Identity;
@@ -205,6 +210,12 @@ public:
 
 	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category="GA|States")
 	TEnumAsByte<EMotionMatchingStance> StanceLastFrame = EMotionMatchingStance::Stand;
+
+	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category = "GA|States")
+	bool IsClimb = false;
+
+	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category = "GA|States")
+	bool IsClimbLastFrame = false;
 
 	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category="GA|Trajectory")
 	FPoseSearchTrajectoryData TrajectoryGenerationDataIdle;

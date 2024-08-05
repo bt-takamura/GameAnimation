@@ -12,104 +12,108 @@ class USpringArmComponent;
 class UMotionWarpingComponent;
 class UCameraComponent;
 
+class UMMLocomotionComponent;
+struct FGATraversalChooserParams;
+struct FTraversalCheckResult;
 
-/** Please add a struct description */
-USTRUCT(BlueprintType)
-struct FGATraversalChooserParams
-{
-	GENERATED_BODY()
-public:
-	/** Please add a variable description */
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta=(DisplayName="ActionType", MakeStructureDefaultValue="NewEnumerator0"))
-	TEnumAsByte<ETraversalActionType> ActionType = ETraversalActionType::None;
 
-	/** Please add a variable description */
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta=(DisplayName="Gait"))
-	TEnumAsByte<EStride> Stride = EStride::Walk;
-
-	/** Please add a variable description */
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta=(DisplayName="Speed", MakeStructureDefaultValue="0.000000"))
-	float Speed = 0.0f;
-
-	/** Please add a variable description */
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta=(DisplayName="ObstacleHeight", MakeStructureDefaultValue="0.000000"))
-	float ObstacleHeight = 0.0f;
-
-	/** Please add a variable description */
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta=(DisplayName="ObstacleDepth", MakeStructureDefaultValue="0.000000"))
-	float ObstacleDepth = 0.0f;
-};
-
-/** Please add a struct description */
-USTRUCT(BlueprintType)
-struct FTraversalCheckResult
-{
-	GENERATED_BODY()
-public:
-	/** Please add a variable description */
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta=(DisplayName="ActionType", MakeStructureDefaultValue="NewEnumerator0"))
-	TEnumAsByte<ETraversalActionType> ActionType = ETraversalActionType::None;
-
-	/** Please add a variable description */
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta=(DisplayName="HasFrontLedge", MakeStructureDefaultValue="False"))
-	bool HasFrontLedge = false;
-
-	/** Please add a variable description */
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta=(DisplayName="FrontLedgeLocation", MakeStructureDefaultValue="0.000000,0.000000,0.000000"))
-	FVector FrontLedgeLocation = FVector::ZeroVector;;
-
-	/** Please add a variable description */
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta=(DisplayName="FrontLedgeNormal", MakeStructureDefaultValue="0.000000,0.000000,0.000000"))
-	FVector FrontLedgeNormal = FVector::ZeroVector;
-
-	/** Please add a variable description */
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta=(DisplayName="HasBackLedge", MakeStructureDefaultValue="False"))
-	bool HasBackLedge = false;
-
-	/** Please add a variable description */
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta=(DisplayName="BackLedgeLocation", MakeStructureDefaultValue="0.000000,0.000000,0.000000"))
-	FVector BackLedgeLocation = FVector::ZeroVector;
-
-	/** Please add a variable description */
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta=(DisplayName="BackLedgeNormal", MakeStructureDefaultValue="0.000000,0.000000,0.000000"))
-	FVector BackLedgeNormal = FVector::ZeroVector;
-
-	/** Please add a variable description */
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta=(DisplayName="HasBackFloor", MakeStructureDefaultValue="False"))
-	bool HasBackFloor = false;
-
-	/** Please add a variable description */
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta=(DisplayName="BackFloorLocation", MakeStructureDefaultValue="0.000000,0.000000,0.000000"))
-	FVector BackFloorLocation = FVector::ZeroVector;
-
-	/** Please add a variable description */
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta=(DisplayName="ObstacleHeight", MakeStructureDefaultValue="0.000000"))
-	float ObstacleHeight = 0.0f;
-
-	/** Please add a variable description */
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta=(DisplayName="ObstacleDepth", MakeStructureDefaultValue="0.000000"))
-	float ObstacleDepth = 0.0f;
-
-	/** Please add a variable description */
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta=(DisplayName="BackLedgeHeight", MakeStructureDefaultValue="0.000000"))
-	float BackLedgeHeight = 0.0f;
-
-	/** Please add a variable description */
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta=(DisplayName="HitComponent", MakeStructureDefaultValue="None"))
-	TObjectPtr<UPrimitiveComponent> HitComponent;
-
-	/** Please add a variable description */
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta=(DisplayName="ChosenMontage", MakeStructureDefaultValue="None"))
-	TObjectPtr<UAnimMontage> ChosenMontage;
-
-	/** Please add a variable description */
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta=(DisplayName="StartTime", MakeStructureDefaultValue="0.000000"))
-	float StartTime = 0.0f;
-
-	/** Please add a variable description */
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta=(DisplayName="PlayRate", MakeStructureDefaultValue="0.000000"))
-	float PlayRate = 1.0f;
-};
+///** Please add a struct description */
+//USTRUCT(BlueprintType)
+//struct FGATraversalChooserParams
+//{
+//	GENERATED_BODY()
+//public:
+//	/** Please add a variable description */
+//	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta=(DisplayName="ActionType", MakeStructureDefaultValue="NewEnumerator0"))
+//	TEnumAsByte<ETraversalActionType> ActionType = ETraversalActionType::None;
+//
+//	/** Please add a variable description */
+//	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta=(DisplayName="Gait"))
+//	TEnumAsByte<EStride> Stride = EStride::Walk;
+//
+//	/** Please add a variable description */
+//	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta=(DisplayName="Speed", MakeStructureDefaultValue="0.000000"))
+//	float Speed = 0.0f;
+//
+//	/** Please add a variable description */
+//	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta=(DisplayName="ObstacleHeight", MakeStructureDefaultValue="0.000000"))
+//	float ObstacleHeight = 0.0f;
+//
+//	/** Please add a variable description */
+//	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta=(DisplayName="ObstacleDepth", MakeStructureDefaultValue="0.000000"))
+//	float ObstacleDepth = 0.0f;
+//};
+//
+///** Please add a struct description */
+//USTRUCT(BlueprintType)
+//struct FTraversalCheckResult
+//{
+//	GENERATED_BODY()
+//public:
+//	/** Please add a variable description */
+//	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta=(DisplayName="ActionType", MakeStructureDefaultValue="NewEnumerator0"))
+//	TEnumAsByte<ETraversalActionType> ActionType = ETraversalActionType::None;
+//
+//	/** Please add a variable description */
+//	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta=(DisplayName="HasFrontLedge", MakeStructureDefaultValue="False"))
+//	bool HasFrontLedge = false;
+//
+//	/** Please add a variable description */
+//	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta=(DisplayName="FrontLedgeLocation", MakeStructureDefaultValue="0.000000,0.000000,0.000000"))
+//	FVector FrontLedgeLocation = FVector::ZeroVector;;
+//
+//	/** Please add a variable description */
+//	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta=(DisplayName="FrontLedgeNormal", MakeStructureDefaultValue="0.000000,0.000000,0.000000"))
+//	FVector FrontLedgeNormal = FVector::ZeroVector;
+//
+//	/** Please add a variable description */
+//	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta=(DisplayName="HasBackLedge", MakeStructureDefaultValue="False"))
+//	bool HasBackLedge = false;
+//
+//	/** Please add a variable description */
+//	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta=(DisplayName="BackLedgeLocation", MakeStructureDefaultValue="0.000000,0.000000,0.000000"))
+//	FVector BackLedgeLocation = FVector::ZeroVector;
+//
+//	/** Please add a variable description */
+//	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta=(DisplayName="BackLedgeNormal", MakeStructureDefaultValue="0.000000,0.000000,0.000000"))
+//	FVector BackLedgeNormal = FVector::ZeroVector;
+//
+//	/** Please add a variable description */
+//	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta=(DisplayName="HasBackFloor", MakeStructureDefaultValue="False"))
+//	bool HasBackFloor = false;
+//
+//	/** Please add a variable description */
+//	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta=(DisplayName="BackFloorLocation", MakeStructureDefaultValue="0.000000,0.000000,0.000000"))
+//	FVector BackFloorLocation = FVector::ZeroVector;
+//
+//	/** Please add a variable description */
+//	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta=(DisplayName="ObstacleHeight", MakeStructureDefaultValue="0.000000"))
+//	float ObstacleHeight = 0.0f;
+//
+//	/** Please add a variable description */
+//	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta=(DisplayName="ObstacleDepth", MakeStructureDefaultValue="0.000000"))
+//	float ObstacleDepth = 0.0f;
+//
+//	/** Please add a variable description */
+//	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta=(DisplayName="BackLedgeHeight", MakeStructureDefaultValue="0.000000"))
+//	float BackLedgeHeight = 0.0f;
+//
+//	/** Please add a variable description */
+//	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta=(DisplayName="HitComponent", MakeStructureDefaultValue="None"))
+//	TObjectPtr<UPrimitiveComponent> HitComponent;
+//
+//	/** Please add a variable description */
+//	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta=(DisplayName="ChosenMontage", MakeStructureDefaultValue="None"))
+//	TObjectPtr<UAnimMontage> ChosenMontage;
+//
+//	/** Please add a variable description */
+//	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta=(DisplayName="StartTime", MakeStructureDefaultValue="0.000000"))
+//	float StartTime = 0.0f;
+//
+//	/** Please add a variable description */
+//	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta=(DisplayName="PlayRate", MakeStructureDefaultValue="0.000000"))
+//	float PlayRate = 1.0f;
+//};
 
 
 /** Please add a struct description */
@@ -176,6 +180,14 @@ public:
 	UFUNCTION(BlueprintPure, Category="GA|Components")
 	UCameraComponent* GetCameraComponent();
 	//! @}
+	
+
+	//! @{@name モーションマッチングの機能コンポーネントを取得
+	UMMLocomotionComponent* GetMMLocomotionComponent();
+	//! @}
+	//!< MotionMatchingによる機能のコンポーネント
+	UPROPERTY(BlueprintReadOnly, VisibleAnywhere, Category = "GA|Default")
+	TObjectPtr<UMMLocomotionComponent> MMLocomotionComponent = nullptr;
 	
 	UFUNCTION(BlueprintCallable, Category="GA|Traversal")
 	void ExecTraversalAction(float TraceForwardDistance, bool& TraversalCheckFailed, bool& MontageSelectionFailed);
@@ -372,3 +384,14 @@ FORCEINLINE UCameraComponent* AGAPlayer::GetCameraComponent(){
 	return CameraComponent;
 }
 
+//----------------------------------------------------------------------//
+//
+//! @brief MotionMatchingによる機能のコンポーネントを取得
+//
+//! @retval MotionMatchingによる機能のコンポーネント
+//
+//----------------------------------------------------------------------//
+FORCEINLINE UMMLocomotionComponent* AGAPlayer::GetMMLocomotionComponent()
+{
+	return MMLocomotionComponent;
+}

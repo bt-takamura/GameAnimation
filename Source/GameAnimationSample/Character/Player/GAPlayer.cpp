@@ -21,6 +21,7 @@
 #include "GameAnimationSample/Environment/GATraversalBlock.h"
 #include "Kismet/GameplayStatics.h"
 #include "Utility/SNUtility.h"
+#include "GameAnimationSample/Character/Player/Component/MMLocomotionComponent.h"
 
 //----------------------------------------------------------------------//
 //
@@ -41,6 +42,8 @@ Super(Initializer)
 	CameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("CameraCompoennt"));
 	
 	CameraComponent->SetupAttachment(SpringArmComponent);
+
+	MMLocomotionComponent = CreateDefaultSubobject<UMMLocomotionComponent>(TEXT("MotionMatchingLocomotionComponent"));
 }
 
 void AGAPlayer::PossessedBy(AController* NewController)
@@ -72,6 +75,7 @@ void AGAPlayer::Tick(float DeltaSeconds)
 	UpdateRotation();
 	
 	UpdateCamera(true);
+
 }
 
 
@@ -677,14 +681,15 @@ void AGAPlayer::UpdateWarpTarget()
 //----------------------------------------------------------------------//
 void AGAPlayer::UpdateMovement(){
 	// 移動速度を設定
-	GetCharacterMovement()->MaxWalkSpeed = CalculateMaxSpeed();
+	GetCharacterMovement()->MaxWalkSpeed = MMLocomotionComponent->CalculateMaxSpeed();
 	// 屈み状態での移動値を設定
 	GetCharacterMovement()->MaxWalkSpeedCrouched = GetCharacterMovement()->MaxWalkSpeed;
 }
 
 void AGAPlayer::UpdateRotation()
 {
-	if(bWantsToStrafe == true)
+	//if(bWantsToStrafe == true)
+	if (MMLocomotionComponent->GetWantsToStrafe() == true)
 	{
 		GetCharacterMovement()->bUseControllerDesiredRotation = true;
 
@@ -709,16 +714,22 @@ void AGAPlayer::UpdateCamera(bool bInterpolate){
 	
 	FSimpleCameraParams* CameraParams = nullptr;
 	
-	if(bWantsToAim == true){
+	bool WantsToAction = MMLocomotionComponent->GetWantsToAim();
+	if (WantsToAction == true)
+	{
 		CameraParams = &CamStyleAim;
-	} else {
+	}
+	else
+	{
 		CameraParams = &CamStyleClose;
 	}
-	
-	if(bWantsToStrafe == false){
-		CameraParams =&CamStyleFar;
+
+	WantsToAction = MMLocomotionComponent->GetWantsToStrafe();
+	if (WantsToAction == false)
+	{
+		CameraParams = &CamStyleFar;
 	}
-	
+
 	FSimpleCameraParams TargetCameraParams;
 	
 	TargetCameraParams.SpringArmLength = CameraDistanceMag * CameraParams->SpringArmLength;

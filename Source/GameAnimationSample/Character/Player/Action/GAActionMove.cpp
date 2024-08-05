@@ -4,66 +4,40 @@
 #include "GameAnimationSample/Character/Player/Action/GAActionMove.h"
 
 #include "SNDef.h"
-#include "GameAnimationSample/Character/Player/GAPlayer.h"
+#include "GameFramework/Character.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "GameAnimationSample/Character/Player/Component/MMLocomotionComponent.h"
 
 void UGAActionMove::ExecAction(const FInputActionValue& InputActionValue)
 {
-	AGAPlayer* Player(GetOwner<AGAPlayer>());
 
-	if(Player == nullptr)
+	ACharacter* Character = GetOwner<ACharacter>();
+	if(Character == nullptr)
 	{
-		SNPLUGIN_LOG(TEXT("GAActionMove : GAPlayer is nullptr."));
+		SNPLUGIN_LOG(TEXT("GAActionMove : Character is nullptr."));
 		
 		return;
 	}
+	UMMLocomotionComponent* MMLocomotionComponent = Character->GetComponentByClass<UMMLocomotionComponent>();
+	if (MMLocomotionComponent == nullptr)
+	{
+		SNPLUGIN_LOG(TEXT("GAActionMove : MMLocomotionComponent is nullptr."));
+		return;
+	}
 
-	FRotator Rotation(Player->GetControlRotation());
+	FRotator Rotation(Character->GetControlRotation());
 
-	FVector2D InputValue(Player->GetMovementInputScaleValue(FVector2D(InputActionValue[0], InputActionValue[1])));
+	FVector2D InputValue(MMLocomotionComponent->GetMovementInputScaleValue(FVector2D(InputActionValue[0], InputActionValue[1])));
 
 	FVector RightVector(UKismetMathLibrary::GetRightVector(FRotator(0.0f, Rotation.Yaw, 0.0f)));
 
-	Player->AddMovementInput(RightVector, InputValue.X);
+	Character->AddMovementInput(RightVector, InputValue.X);
 
 	FVector ForwardVector(UKismetMathLibrary::GetForwardVector(FRotator(0.0f, Rotation.Yaw, 0.0f)));
 
-	Player->AddMovementInput(ForwardVector, InputValue.Y);
+	Character->AddMovementInput(ForwardVector, InputValue.Y);
 
-	{
-		bool FullMovementInput = false;
-		
-		float InputMag = InputValue.Length();
+	
+	MMLocomotionComponent->SetupStride(InputValue);
 
-		if(InputMag >= Player->AnalogWalkRunThreshold)
-		{
-			FullMovementInput = true;
-		} else
-		{
-			if((Player->MovementStickMode == EAnalogueMovementBehavior::FixedSpeed_SingleStride)
-			||(Player->MovementStickMode == EAnalogueMovementBehavior::VariableSpeed_SingleStride)){
-				FullMovementInput = true;
-			}
-		}
-
-		if(Player->bWantsToSprint == true)
-		{
-			Player->Stride = EStride::Run;
-		} else
-		{
-			if(Player->bWantsToWalk == true)
-			{
-				Player->Stride = EStride::Walk;
-			} else
-			{
-				if(FullMovementInput == true)
-				{
-					Player->Stride = EStride::Run;
-				} else
-				{
-					Player->Stride = EStride::Walk;
-				}
-			}
-		}
-	}
 }

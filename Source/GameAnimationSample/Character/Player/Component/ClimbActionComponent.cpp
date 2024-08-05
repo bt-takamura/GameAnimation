@@ -2,6 +2,7 @@
 
 
 #include "GameAnimationSample/Character/Player/Component/ClimbActionComponent.h"
+
 #include "Kismet/KismetSystemLibrary.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "GameFramework/Character.h"
@@ -14,14 +15,8 @@
 DEFINE_LOG_CATEGORY(ClimbComp);
 
 // Sets default values for this component's properties
-UClimbActionComponent::UClimbActionComponent()
-: TargetName(TEXT("Climb"))
-, IsClimb(false)
-, IsClimbWallEdge(false)
-, ClimbWallNormal(0.0f, 0.0f, 0.0f)
-, ClimbTransform()
-, ImpactWallLocation(0.0f, 0.0f, 0.0f)
-, ImpactWallNormal(0.0f, 0.0f, 0.0f)
+UClimbActionComponent::UClimbActionComponent(const FObjectInitializer& Initializer)
+: Super(Initializer)
 {
 	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
 	// off to improve performance if you don't need them.
@@ -169,6 +164,8 @@ UPARAM(DisplayName = "CanselSuccess") bool UClimbActionComponent::CanselAction()
 //! @brief EMovementMode::MOVE_Falling時の最高移動速度を求める
 //
 //! @retval float EMovementMode::MOVE_Falling時の最高移動速度
+//
+//! @note キャラクターの向きと進む方向が違い場合に移動スピードを変える
 //
 //----------------------------------------------------------------------//
 float UClimbActionComponent::CalcMaxFlySpeed() const
@@ -429,7 +426,7 @@ bool UClimbActionComponent::CheckDistanceToWall()
 	float CapsuleRadius = Character->GetCapsuleComponent()->GetScaledCapsuleRadius();
 	
 	//! 壁端までの距離を計算する
-	FVector EdgeLocation = ImpactWallLocation + ((Character->GetActorForwardVector() * -1.0f) * (CapsuleRadius * 2.0f));
+	FVector EdgeLocation = ImpactWallLocation + ((UKismetMathLibrary::NegateVector(Character->GetActorForwardVector())) * (CapsuleRadius * 2.0f));
 	FVector VectorToWall = EdgeLocation - Character->GetActorLocation();
 
 	float DistanceToWall = VectorToWall.Length();
@@ -486,7 +483,7 @@ void UClimbActionComponent::Turn()
 	}
 	float CapsuleRadius = Character->GetCapsuleComponent()->GetScaledCapsuleRadius();
 	//! 衝突判定の取れた位置にTransformで移動
-	FRotator Rotator = UKismetMathLibrary::MakeRotFromX(ImpactWallNormal * -1.0f);
+	FRotator Rotator = UKismetMathLibrary::MakeRotFromX(UKismetMathLibrary::NegateVector(ImpactWallNormal));
 	//! 壁の法線方向にCapsule1個分 + 掴まる際調整した分移動させる
 	FVector Location = ImpactWallLocation + (ImpactWallNormal * AdjustValue);
 	Character->SetActorTransform(FTransform(Rotator, Location, FVector(1.0f, 1.0f, 1.0f)), false, nullptr, ETeleportType::TeleportPhysics);

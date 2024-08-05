@@ -17,6 +17,8 @@
 #include "PoseSearch/PoseSearchTrajectoryLibrary.h"
 #include "PoseSearch/PoseSearchDatabase.h"
 #include "PoseSearch/MotionMatchingAnimNodeLibrary.h"
+#include "GameAnimationSample/Character/Player/Component/MMLocomotionComponent.h"
+#include "GameAnimationSample/Character/Player/Component/ClimbActionComponent.h"
 
 UGAMotionMatchingAnimInstance::UGAMotionMatchingAnimInstance()
 :Super()
@@ -35,26 +37,32 @@ void UGAMotionMatchingAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 {
 	Super::NativeUpdateAnimation(DeltaSeconds);
 
+
 	if(OwnerCharacter != nullptr)
 	{
-		UpdateEssentialValues();
+		UMMLocomotionComponent* MMLocomotionComponent = OwnerCharacter->GetComponentByClass<UMMLocomotionComponent>();
+		if (MMLocomotionComponent != nullptr)
+		{
+			UpdateEssentialValues();
 
-		GenerateTrajectory();
+			GenerateTrajectory();
 
-		UpdateState();
+			UpdateState();
+		}
 	}
 }
 
 
 void UGAMotionMatchingAnimInstance::SetReferences()
 {
-	AGAPlayer* Player(Cast<AGAPlayer>(TryGetPawnOwner()));
+	ACharacter* Character(Cast<ACharacter>(TryGetPawnOwner()));
 
-	if(Player != nullptr)
+	if(Character != nullptr)
 	{
-		OwnerCharacter = Player;
+		OwnerCharacter = Character;
 
-		OwnerMovementComponent = Cast<UCharacterMovementComponent>(Player->GetMovementComponent());
+		OwnerMovementComponent = Cast<UCharacterMovementComponent>(Character->GetMovementComponent());
+
 	} else
 	{
 		SNPLUGIN_ERROR(TEXT("Player is nullptr."));
@@ -86,10 +94,8 @@ void UGAMotionMatchingAnimInstance::GenerateTrajectory()
 
 void UGAMotionMatchingAnimInstance::UpdateEssentialValues()
 {
-	if(OwnerCharacter != nullptr)
-	{
-		CharacterTransform = OwnerCharacter->GetActorTransform();
-	}
+	CharacterTransform = OwnerCharacter->GetActorTransform();
+	
 	// 可能であれば、オフセットされたルートボーンノードからルートボーントランスフォームをキャッシュします。
 	// Get Socket Transform 関数を使用する代わりにこの方法でオフセットを保存すると、より正確な値が得られます。
 	// スケルタルメッシュはエディタではデフォルトで -90 度回転されるため、他のトランスフォームとの角度比較を容易にするためにオフセットが追加されます。
@@ -180,7 +186,7 @@ bool UGAMotionMatchingAnimInstance::ShouldSpinTransition() const
 	
 	if((FMath::Abs(DeltaRotator.Yaw) >= 130.0f)
 	&& (Speed2D >= 150.0f)
-	&& (CurrentDatabaseTags.Contains(TEXT("Pivots")))){
+	&& (CurrentDatabaseTags.Contains(TEXT("Pivots")) == false)){
 		return true;
 	}
 	
@@ -198,6 +204,47 @@ bool UGAMotionMatchingAnimInstance::IsMoving() const
 	return false;
 }
 
+bool UGAMotionMatchingAnimInstance::IsStarting() const
+{
+	float FutureSpeed = FutureVelocity.Size2D();
+	float Speed = Velocity.Size2D();
+
+	if (IsMoving() == true 
+		&& (FutureSpeed >= (Speed + 100.0f))
+		&& (CurrentDatabaseTags.Contains(TEXT("Pivots")) == false))
+	{
+		return true;
+	}
+
+	return false;
+}
+
+bool UGAMotionMatchingAnimInstance::IsPivoting() const
+{
+	FRotator FutureOrientation = FutureVelocity.ToOrientationRotator();
+	FRotator Orientation = Velocity.ToOrientationRotator();
+
+	FRotator Delta = UKismetMathLibrary::NormalizedDeltaRotator(FutureOrientation, Orientation);
+
+	float Threshold = 0.0f;
+	switch (RotationMode)
+	{
+	case EMotionMatchingRotationMode::OrientToMovement:
+		Threshold = 60.0f;	break;
+	case EMotionMatchingRotationMode::Strafe:
+		Threshold = 40.0f;	break;
+	default:
+		break;
+	}
+
+	if (UKismetMathLibrary::Abs(Delta.Yaw) >= Threshold)
+	{
+		return true;
+	}
+
+	return false;
+}
+
 bool UGAMotionMatchingAnimInstance::SholdTurnInPlace() const
 {
 	if(OwnerCharacter == nullptr)
@@ -206,12 +253,20 @@ bool UGAMotionMatchingAnimInstance::SholdTurnInPlace() const
 		
 		return false;
 	}
+	UMMLocomotionComponent* MMLocomotionComponent = OwnerCharacter->GetComponentByClass<UMMLocomotionComponent>();
+	if (MMLocomotionComponent == nullptr)
+	{
+		SNPLUGIN_LOG(TEXT("AnimInst : MMLocomotionComponent is nullptr."));
+
+		return false;
+	}
 	
 	bool Result = false;
 	// 止まった瞬間かチェック(MovementStateがIdleに変わった瞬間)
 	bool bStopTrigger = ((MovementState == EMotionMatchingMovementState::Idle) && (MovementStateLastFrame == EMotionMatchingMovementState::Moving));
 	
-	if((bStopTrigger == true) || (OwnerCharacter->bWantsToAim == true)){
+	if((bStopTrigger == true) || (MMLocomotionComponent->GetWantsToAim() == true))
+	{
 		
 		FRotator DeltaRotator(UKismetMathLibrary::NormalizedDeltaRotator(CharacterTransform.Rotator(), RootTransform.Rotator()));
 		
@@ -220,7 +275,7 @@ bool UGAMotionMatchingAnimInstance::SholdTurnInPlace() const
 		}
 	}
 	
-	return true;
+	return Result;
 }
 
 bool UGAMotionMatchingAnimInstance::JustLandedLight() const
@@ -231,9 +286,17 @@ bool UGAMotionMatchingAnimInstance::JustLandedLight() const
 		
 		return false;
 	}
+	UMMLocomotionComponent* MMLocomotionComponent = OwnerCharacter->GetComponentByClass<UMMLocomotionComponent>();
+	if (MMLocomotionComponent == nullptr)
+	{
+		SNPLUGIN_LOG(TEXT("AnimInst : MMLocomotionComponent is nullptr."));
+
+		return false;
+	}
+
 	
-	if((OwnerCharacter->bJustLanded == true)
-	&& (FMath::Abs(OwnerCharacter->LandSpeed.Z) < FMath::Abs(HeavyLandSpeedThreshold)))
+	if((MMLocomotionComponent->IsJustLanded() == true)
+	&& (FMath::Abs(MMLocomotionComponent->GetLandSpeed().Z) < FMath::Abs(HeavyLandSpeedThreshold)))
 	{
 		return true;
 	}
@@ -249,9 +312,16 @@ bool UGAMotionMatchingAnimInstance::JustLandedHeavy() const
 		
 		return false;
 	}
+	UMMLocomotionComponent* MMLocomotionComponent = OwnerCharacter->GetComponentByClass<UMMLocomotionComponent>();
+	if (MMLocomotionComponent == nullptr)
+	{
+		SNPLUGIN_LOG(TEXT("AnimInst : MMLocomotionComponent is nullptr."));
+
+		return false;
+	}
 	
-	if((OwnerCharacter->bJustLanded == true)
-	&& (FMath::Abs(OwnerCharacter->LandSpeed.Z) >= FMath::Abs(HeavyLandSpeedThreshold)))
+	if((MMLocomotionComponent->IsJustLanded() == true)
+	&& (FMath::Abs(MMLocomotionComponent->GetLandSpeed().Z) >= FMath::Abs(HeavyLandSpeedThreshold)))
 	{
 		return true;
 	}
@@ -511,13 +581,6 @@ FQuat UGAMotionMatchingAnimInstance::GetTrajectoryFacing() const
 
 void UGAMotionMatchingAnimInstance::UpdateState()
 {
-	if((OwnerCharacter == nullptr) || (OwnerMovementComponent == nullptr))
-	{
-		SNPLUGIN_ERROR(TEXT("Owner Character is nullptr."));
-
-		return;
-	}
-
 	MovementModeLastFrame = MovementMode;
 
 	switch(OwnerMovementComponent->MovementMode)
@@ -559,7 +622,8 @@ void UGAMotionMatchingAnimInstance::UpdateState()
 	// 例えば、キャラクタはゆっくり動いていても、Run Gait Enumの状態である可能性があります。
 	StrideLastFrame = Stride;
 
-	Stride = OwnerCharacter->Stride;
+	UMMLocomotionComponent* MMLocomotionComponent = OwnerCharacter->GetComponentByClass<UMMLocomotionComponent>();
+	Stride = MMLocomotionComponent->GetStride();
 	
 	// キャラクタのスタンスをキャッシュし、最後のフレームの値を保存します。Stance Enumは、キャラクタの移動コンポーネントがしゃがみモードにあるかどうかを表します。
 	StanceLastFrame = Stance;
@@ -571,6 +635,16 @@ void UGAMotionMatchingAnimInstance::UpdateState()
 	{
 		Stance = EMotionMatchingStance::Stand;
 	}
+
+	//! クライム中かどうか
+	UClimbActionComponent* ClimbActionComponent = OwnerCharacter->GetComponentByClass<UClimbActionComponent>();
+	if (ClimbActionComponent != nullptr)
+	{
+		IsClimbLastFrame = IsClimb;
+
+		IsClimb = ClimbActionComponent->GetIsClimb();
+	}
+
 }
 
 

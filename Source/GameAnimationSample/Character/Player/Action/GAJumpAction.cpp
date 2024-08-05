@@ -4,36 +4,44 @@
 #include "GameAnimationSample/Character/Player/Action/GAJumpAction.h"
 
 #include "SNDef.h"
-#include "GameAnimationSample/Character/Player/GAPlayer.h"
+#include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "GameAnimationSample/Character/Player/Component/MMLocomotionComponent.h"
 
 void UGAJumpAction::ExecAction(const FInputActionValue& InputActionValue)
 {
 	Super::ExecAction(InputActionValue);
 
-	AGAPlayer* Player(GetOwner<AGAPlayer>());
-
-	if(Player == nullptr)
+	ACharacter* Character = GetOwner<ACharacter>();
+	if (Character == nullptr)
 	{
-		SNPLUGIN_LOG(TEXT("Player is nullptr."));
-
+		SNPLUGIN_LOG(TEXT("Character is nullptr."));
+		return;
+	}
+	UMMLocomotionComponent* MMLocompotionComponent = Character->GetComponentByClass<UMMLocomotionComponent>();
+	if (MMLocompotionComponent == nullptr)
+	{
+		SNPLUGIN_LOG(TEXT("MMLocomotionComponent is nullptr."));
 		return;
 	}
 
-	if(Player->IsEnableTraversalAction() != true)
+
+	if(MMLocompotionComponent->IsEnableTraversalAction() != true)
+
 	{
-		if(Player->GetCharacterMovement()->IsMovingOnGround() == true)
+		if(Character->GetCharacterMovement()->IsMovingOnGround() == true)
 		{
-			float FowardTraceDistance = Player->GetTraversalForwardTraceDistance();
+
+			float FowardTraceDistance = MMLocompotionComponent->GetTraversalForwardTraceDistance();
 
 			bool TraversalCheckFailed = false;
 			bool MontageSelectionFailed = false;
 			
-			Player->ExecTraversalAction(FowardTraceDistance, TraversalCheckFailed, MontageSelectionFailed);
+			MMLocompotionComponent->ExecTraversalAction(FowardTraceDistance, TraversalCheckFailed, MontageSelectionFailed);
 
 			if(TraversalCheckFailed == true)
 			{
-				Player->Jump();
+				Character->Jump();
 			}
 
 			if(MontageSelectionFailed == true)
@@ -44,12 +52,13 @@ void UGAJumpAction::ExecAction(const FInputActionValue& InputActionValue)
 		{
 			// @@Satoshi Nishimura テスト的にジャンプ・落下中にしがみつけるようにしてみる。
 			// つながりやめり込みが気になるものの、SplineComponentが仕込まれているメッシュであれば掴める。
-			float FowardTraceDistance = Player->GetTraversalForwardTraceDistance();
+			float FowardTraceDistance = MMLocompotionComponent->GetTraversalForwardTraceDistance();
 
 			bool TraversalCheckFailed = false;
 			bool MontageSelectionFailed = false;
 			
-			Player->ExecTraversalAction(FowardTraceDistance * 1.5f, TraversalCheckFailed, MontageSelectionFailed);
+			MMLocompotionComponent->ExecTraversalAction(FowardTraceDistance * 1.5f, TraversalCheckFailed, MontageSelectionFailed);
+
 		}
 	}
 }

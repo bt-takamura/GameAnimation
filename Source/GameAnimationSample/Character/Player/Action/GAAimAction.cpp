@@ -5,24 +5,29 @@
 
 #include "SNDef.h"
 #include "GameAnimationSample/Character/Player/GAPlayer.h"
+#include "GameAnimationSample/Character/Player/Component/MMLocomotionComponent.h"
 
 void UGAAimAction::ExecAction(const FInputActionValue& InputActionValue)
 {
 	Super::ExecAction(InputActionValue);
 
-	AGAPlayer* Player(GetOwner<AGAPlayer>());
-
-	if(Player == nullptr)
+	ACharacter* Character = GetOwner<ACharacter>();
+	if (Character == nullptr)
 	{
-		SNPLUGIN_LOG(TEXT("Player is nullptr."));
-
+		SNPLUGIN_LOG(TEXT("Character is nullptr."));
+		return;
+	}
+	UMMLocomotionComponent* MMLocomotionComponent = Character->GetComponentByClass<UMMLocomotionComponent>();
+	if (MMLocomotionComponent == nullptr)
+	{
+		SNPLUGIN_LOG(TEXT("MMLocomotionComponent is nullptr."));
 		return;
 	}
 
-	Player->bWantsToAim = InputActionValue.Get<bool>();
+	MMLocomotionComponent->SetWantsToAim(InputActionValue.Get<bool>());
 
-	if(Player->bWantsToAim == true)
+	if (MMLocomotionComponent->GetWantsToAim() == true)
 	{
-		Player->bWantsToStrafe = true;
+		MMLocomotionComponent->SetWantsToStrafe(true);
 	}
 }
