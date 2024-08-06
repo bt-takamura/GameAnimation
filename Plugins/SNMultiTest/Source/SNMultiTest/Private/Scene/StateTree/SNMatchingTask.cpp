@@ -3,8 +3,10 @@
 
 #include "Scene/StateTree/SNMatchingTask.h"
 
+#include "GameFramework/Character.h"
 #include "UI/Widget/SNMatchingMenu.h"
 #include "UI/Widget/SNButton.h"
+#include "Utility/SNUtility.h"
 
 EStateTreeRunStatus USNMatchingTask::Tick(FStateTreeExecutionContext& Context, const float DeltaTime)
 {
@@ -40,9 +42,13 @@ void USNMatchingTask::HudPostLoad()
 
 	if(Menu != nullptr)
 	{
+		FInputModeGameAndUI InputMode;
+		
 		if(USNButton* Button = Menu->GetHostSessionButton())
 		{
 			Button->OnClickedDelegate.AddDynamic(this, &USNMatchingTask::OnClickHostSession);
+
+			InputMode.SetWidgetToFocus(Button->TakeWidget());
 		}
 
 		if(USNButton* Button = Menu->GetJoinSessionButton())
@@ -51,6 +57,24 @@ void USNMatchingTask::HudPostLoad()
 		}
 
 		SetVisibleWidget(EWidgetLayer::Layer3, Menu);
+
+		APlayerController* PlayerController(SNUtility::GetPlayerController<APlayerController>());
+
+		if(PlayerController != nullptr)
+		{
+			ACharacter* Character(SNUtility::GetCurrentPlayer<ACharacter>());
+
+			if(Character != nullptr)
+			{
+				Character->DisableInput(PlayerController);
+			}
+			
+			PlayerController->bShowMouseCursor = true;
+
+			InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+			
+			PlayerController->SetInputMode(InputMode);
+		}
 	}
 }
 
