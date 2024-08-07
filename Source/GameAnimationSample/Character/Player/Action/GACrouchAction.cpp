@@ -14,7 +14,7 @@ void UGACrouchAction::ExecAction(const FInputActionValue& InputActionValue)
 
 	if(Player == nullptr)
 	{
-		SNPLUGIN_LOG(TEXT("Player is nullptr."));
+		SNPLUGIN_LOG(TEXT("CrouchAction : Player is nullptr."));
 
 		return;
 	}

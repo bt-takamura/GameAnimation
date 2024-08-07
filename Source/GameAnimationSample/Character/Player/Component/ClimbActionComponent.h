@@ -27,7 +27,7 @@ public:
 
 	//! @{@name Climbを試みる、壁に掴まる
 	UFUNCTION(BlueprintCallable)
-	UPARAM(DisplayName = "ClimbSuccess")bool TryAction(UMotionWarpingComponent* MotionWarping = nullptr);
+	UPARAM(DisplayName = "ClimbSuccess")bool TryAction();
 	//! @}
 
 	//! @{@name Climb中の移動
@@ -42,7 +42,7 @@ public:
 
 	//! @{@name Climbアクション中か確認
 	UFUNCTION(BlueprintCallable)
-	bool GetIsClimb() const;
+	bool IsClimbing() const;
 	//! @}
 
 	//! @{@name EMovementMode::MOVE_Falling時の最高移動速度を求める
@@ -70,7 +70,7 @@ private:
 	//! @}
 
 	//! @{@name 壁を掴む
-	bool GraspWall(UMotionWarpingComponent* MotionWarping);
+	bool GraspWall();
 	//! @}
 
 	//! @{@name Climb中の入力による移動
@@ -138,8 +138,8 @@ private:
 	//!< MotionWarpingのTargetName
 	const FName TargetName = TEXT("Climb");
 
-	//!< Climb中のフラグ
-	bool IsClimb = false;
+	//!< クライム中か
+	bool bClimbing = false;
 
 	//!< 壁の端があるかのフラグ
 	bool IsClimbWallEdge = false;
@@ -166,8 +166,8 @@ private:
 //! @retval false	Climbしていない
 //
 //----------------------------------------------------------------------//
-FORCEINLINE bool UClimbActionComponent::GetIsClimb() const
+FORCEINLINE bool UClimbActionComponent::IsClimbing() const
 {
-	return IsClimb;
+	return bClimbing;
 }
 

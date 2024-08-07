@@ -7,6 +7,7 @@
 #include "GameFramework/Character.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "GameAnimationSample/Character/Player/Component/MMLocomotionComponent.h"
+#include "GameAnimationSample/Character/Player/Component/ClimbActionComponent.h"
 
 void UGAActionMove::ExecAction(const FInputActionValue& InputActionValue)
 {
@@ -25,9 +26,21 @@ void UGAActionMove::ExecAction(const FInputActionValue& InputActionValue)
 		return;
 	}
 
-	FRotator Rotation(Character->GetControlRotation());
 
 	FVector2D InputValue(MMLocomotionComponent->GetMovementInputScaleValue(FVector2D(InputActionValue[0], InputActionValue[1])));
+
+	UClimbActionComponent* ClimbActionComponent = Character->GetComponentByClass<UClimbActionComponent>();
+	if (ClimbActionComponent != nullptr)
+	{
+		if (ClimbActionComponent->IsClimbing() == true)
+		{
+			ClimbActionComponent->MoveAction(InputValue);
+			return;
+		}
+	}
+
+
+	FRotator Rotation(Character->GetControlRotation());
 
 	FVector RightVector(UKismetMathLibrary::GetRightVector(FRotator(0.0f, Rotation.Yaw, 0.0f)));
 

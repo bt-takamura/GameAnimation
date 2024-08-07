@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/Character.h"
+#include "Character/Base/SNCharacterBase.h"
 #include "MotionMatcingCharacterBase.generated.h"
 
 class UMMLocomotionComponent;
@@ -13,7 +13,7 @@ class UMotionWarpingComponent;
  *	モーションマッチング機能を使用するキャラクターのベースクラス
  */
 UCLASS()
-class GAMEANIMATIONSAMPLE_API AMotionMatcingCharacterBase : public ACharacter
+class GAMEANIMATIONSAMPLE_API AMotionMatcingCharacterBase : public ASNPlayerBase
 {
 	GENERATED_BODY()
 
@@ -43,18 +43,17 @@ protected:
 	virtual void UpdateMovement();
 	//! @}
 
-private:	
 	//! @{@name 回転設定を更新
-	void UpdateRotation();
+	virtual void UpdateRotation();
 	//! @}
-
-
+	 
+private:	
 	//!< モーションワーピングコンポーネント
-	UPROPERTY(EditDefaultsOnly, Category = "Default")
+	UPROPERTY(EditDefaultsOnly, Category = "MM | Default")
 	TObjectPtr<UMotionWarpingComponent> MotionWarpingComponent = nullptr;
 
 	//!< モーションマッチングによる移動機能のコンポーネント
-	UPROPERTY(EditDefaultsOnly, Category = "Default")
+	UPROPERTY(EditDefaultsOnly, Category = "MM | Default")
 	TObjectPtr<UMMLocomotionComponent> MMLocomotionComponent = nullptr;
 };
 

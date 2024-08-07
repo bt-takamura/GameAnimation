@@ -65,13 +65,15 @@ void UGAMotionMatchingAnimInstance::SetReferences()
 
 	} else
 	{
-		SNPLUGIN_ERROR(TEXT("Player is nullptr."));
+		SNPLUGIN_ERROR(TEXT("Character is nullptr."));
 	}
 }
 
 void UGAMotionMatchingAnimInstance::GenerateTrajectory()
 {
-	const FPoseSearchTrajectoryData& TrajectoryData = (Speed2D> 0.0f) ? TrajectoryGenerationDataMoving : TrajectoryGenerationDataIdle;
+	FPoseSearchTrajectoryData& MoveTrajectoryData = (IsClimb == true) ? TrajectoryGenerationDataClimbing : TrajectoryGenerationDataMoving;
+	
+	const FPoseSearchTrajectoryData& TrajectoryData = (Speed2D > 0.0f) ? MoveTrajectoryData : TrajectoryGenerationDataIdle;
 
 	FPoseSearchQueryTrajectory ResultTrajectory;
 	
@@ -340,6 +342,16 @@ bool UGAMotionMatchingAnimInstance::JustTraversed() const
 	return false;
 }
 
+bool UGAMotionMatchingAnimInstance::JustClimbed() const
+{
+	if ((IsClimbLastFrame == true)
+		&& (IsClimb == false))
+	{
+		return true;
+	}
+	return false;
+}
+
 FVector UGAMotionMatchingAnimInstance::CalculateRelativeAccelerationAmount() const
 {
 	FVector Result(FVector::ZeroVector);
@@ -555,7 +567,8 @@ EPoseSearchInterruptMode UGAMotionMatchingAnimInstance::GetMotionMatchingInterru
 		||(Stance != StanceLastFrame));
 	
 	if((((bStateChanged == true) && (MovementMode == EMotionMatchingMovementMode::OnGround)))
-		|| (MovementMode != MovementModeLastFrame))
+		|| (MovementMode != MovementModeLastFrame)
+		|| (IsClimb != IsClimbLastFrame))
 	{
 		return EPoseSearchInterruptMode::InterruptOnDatabaseChange;
 	} else
@@ -642,7 +655,7 @@ void UGAMotionMatchingAnimInstance::UpdateState()
 	{
 		IsClimbLastFrame = IsClimb;
 
-		IsClimb = ClimbActionComponent->GetIsClimb();
+		IsClimb = ClimbActionComponent->IsClimbing();
 	}
 
 }

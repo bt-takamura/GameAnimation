@@ -10,16 +10,15 @@ void UGALookAction::ExecAction(const FInputActionValue& InputActionValue)
 {
 	Super::ExecAction(InputActionValue);
 
-	AGAPlayer* Player(GetOwner<AGAPlayer>());
-
-	if(Player == nullptr)
+	ACharacter* Character = GetOwner<ACharacter>();
+	if (Character == nullptr)
 	{
-		SNPLUGIN_LOG(TEXT("Player is nullptr."));
+		SNPLUGIN_LOG(TEXT("Character is nullptr."));
 
 		return;
 	}
 
-	Player->AddControllerYawInput(InputActionValue[0]);
+	Character->AddControllerYawInput(InputActionValue[0]);
 
-	Player->AddControllerPitchInput(InputActionValue[1]);
+	Character->AddControllerPitchInput(InputActionValue[1]);
 }

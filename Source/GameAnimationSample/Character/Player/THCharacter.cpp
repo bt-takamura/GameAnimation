@@ -3,6 +3,8 @@
 
 #include "GameAnimationSample/Character/Player/THCharacter.h"
 
+#include "Character/SNPlayerController.h"
+#include "Utility/SNUtility.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Camera/CameraComponent.h"
@@ -23,7 +25,6 @@ ATHCharacter::ATHCharacter(const FObjectInitializer& ObjectInitializer)
 	CameraComponent->SetupAttachment(SpringArmComponent);
 
 	ClimbActionComponent = CreateDefaultSubobject<UClimbActionComponent>(TEXT("ClimbActionComponent"));
-
 }
 
 void ATHCharacter::Tick(float DeltaTime)
@@ -36,6 +37,17 @@ void ATHCharacter::Tick(float DeltaTime)
 void ATHCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
+}
+
+void ATHCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	Super::EndPlay(EndPlayReason);
+
+	//! タイマーの解放
+	FTimerManager& TimerManager = GetWorldTimerManager();
+
+	TimerManager.ClearTimer(TimerHandle);
+	TimerManager.ClearAllTimersForObject(this);
 }
 
 //----------------------------------------------------------------------//
@@ -81,6 +93,14 @@ void ATHCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
+	ASNPlayerController* PlayerController = SNUtility::GetPlayerController<ASNPlayerController>();
+	if (PlayerController != nullptr)
+	{
+		PlayerController->EnabledInputType(FName(TEXT("Normal")));
+	}
+
+	//! 落下時のイベント関数を追加
+	LandedDelegate.AddDynamic(this, &ATHCharacter::OnLandedDelegate);
 }
 
 void ATHCharacter::UpdateMovement()
@@ -89,6 +109,16 @@ void ATHCharacter::UpdateMovement()
 
 	//! 飛行モードの移動速度を更新(クライムアクションで移動するため)
 	GetCharacterMovement()->MaxFlySpeed = ClimbActionComponent->CalcMaxFlySpeed();
+}
+
+void ATHCharacter::UpdateRotation()
+{
+	Super::UpdateRotation();
+	
+	if (ClimbActionComponent->IsClimbing() == true)
+	{
+		ClimbActionComponent->SetClimbRotation();
+	}
 }
 
 void ATHCharacter::UpdateCamera(bool bInterpolate)
@@ -127,4 +157,28 @@ void ATHCharacter::UpdateCamera(bool bInterpolate)
 	GetSpringArmComponent()->CameraLagSpeed = UKismetMathLibrary::FInterpTo(GetSpringArmComponent()->CameraLagSpeed, TargetCameraParams.TranslationLagSpeed, UGameplayStatics::GetWorldDeltaSeconds(GetWorld()), TargetCameraParams.TransitionSpeed);
 	
 	GetSpringArmComponent()->SocketOffset = UKismetMathLibrary::VInterpTo(GetSpringArmComponent()->SocketOffset, TargetCameraParams.SocketOffset, UGameplayStatics::GetWorldDeltaSeconds(GetWorld()), TargetCameraParams.TransitionSpeed);
+}
+
+//----------------------------------------------------------------------//
+//
+//! @brief 着地時の処理、デリゲートに追加する関数
+//! 
+//! @param Hit	着地を示す結果
+//
+//----------------------------------------------------------------------//
+void ATHCharacter::OnLandedDelegate(const FHitResult& Hit)
+{
+	FVector LandSpeed = GetCharacterMovement()->Velocity;
+	GetMMLocomotionComponent()->SetLandSpeed(LandSpeed);
+
+	GetMMLocomotionComponent()->SetJustLanded(true);
+
+	FTimerManager& TimerManager = GetWorldTimerManager();
+	TimerManager.SetTimer(TimerHandle, this, &ATHCharacter::TurnOffJustLandded, 0.3f, false);
+
+}
+
+void ATHCharacter::TurnOffJustLandded()
+{
+	GetMMLocomotionComponent()->SetJustLanded(false);
 }

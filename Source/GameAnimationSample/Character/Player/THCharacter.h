@@ -52,6 +52,8 @@ public:
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+
 	//! @{@name スプリングアームコンポーネントの取得
 	USpringArmComponent* GetSpringArmComponent() const;
 	//! @}
@@ -76,11 +78,21 @@ protected:
 
 	virtual void UpdateMovement() override;
 
+	virtual void UpdateRotation() override;
+
 private:
 	//! @{@name カメラの更新
 	void UpdateCamera(bool bInterpolate);
 	//! @}
 
+	//! @{@name 着地時の処理
+	UFUNCTION()
+	void OnLandedDelegate(const FHitResult& Hit);
+	//! @}
+	
+	//! @{@name 着地フラグを下す
+	void TurnOffJustLandded();
+	//! @}
 
 	//!< スプリングアームコンポーネント
 	UPROPERTY(EditDefaultsOnly, Category = "TH | Default")
@@ -102,9 +114,12 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "TH | Camera")
 	FCameraParams CamStyleAim;
 
-	//!< 
+	//!< カメラ距離の大きさ
 	UPROPERTY(EditDefaultsOnly, Category = "TH | Camera")
 	float CameraDistanceMag = 1.0f;
+
+	//!< タイマー用のハンドル
+	FTimerHandle TimerHandle;
 
 	//!< クライム(よじ登る)アクション機能のコンポーネント
 	UPROPERTY(EditDefaultsOnly, Category = "TH | Climb")

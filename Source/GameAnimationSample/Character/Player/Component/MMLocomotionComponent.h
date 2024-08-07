@@ -436,7 +436,7 @@ FORCEINLINE void UMMLocomotionComponent::SetWantsToAim(bool Flag)
 
 //----------------------------------------------------------------------//
 //
-//! @brief 直前に着地したかどうかチェック
+//! @brief 直前に着地したかチェック
 //
 //! @retval true	直前に着地した
 //! @retval false	直前に着地していない
@@ -449,7 +449,7 @@ FORCEINLINE bool UMMLocomotionComponent::IsJustLanded() const
 
 //----------------------------------------------------------------------//
 //
-//! @brief 直前に着地したかどうかチェック
+//! @brief 直前に着地したかのフラグ設定
 //
 //! @param	Flag	設定するbool値
 //

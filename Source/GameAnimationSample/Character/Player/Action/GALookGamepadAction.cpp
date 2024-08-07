@@ -11,11 +11,10 @@ void UGALookGamepadAction::ExecAction(const FInputActionValue& InputActionValue)
 {
 	Super::ExecAction(InputActionValue);
 
-	AGAPlayer* Player(GetOwner<AGAPlayer>());
-
-	if(Player == nullptr)
+	ACharacter* Character = GetOwner<ACharacter>();
+	if (Character == nullptr)
 	{
-		SNPLUGIN_LOG(TEXT("Player is nullptr."));
+		SNPLUGIN_LOG(TEXT("Character is nullptr."));
 
 		return;
 	}
@@ -24,7 +23,7 @@ void UGALookGamepadAction::ExecAction(const FInputActionValue& InputActionValue)
 
 	Vector *= UGameplayStatics::GetWorldDeltaSeconds(GetWorld());
 
-	Player->AddControllerYawInput(Vector.X);
+	Character->AddControllerYawInput(Vector.X);
 
-	Player->AddControllerPitchInput(Vector.Y);
+	Character->AddControllerPitchInput(Vector.Y);
 }

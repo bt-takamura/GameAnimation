@@ -13,6 +13,7 @@
 #include "KismetAnimationLibrary.h"
 
 DEFINE_LOG_CATEGORY(ClimbComp);
+#define VELOCITY_JUDGE 1
 
 // Sets default values for this component's properties
 UClimbActionComponent::UClimbActionComponent(const FObjectInitializer& Initializer)
@@ -54,12 +55,20 @@ void UClimbActionComponent::TickComponent(float DeltaTime, ELevelTick TickType, 
 //! @param MotionWarping MotionWarpingのコンポーネント
 //
 //----------------------------------------------------------------------//
-UPARAM(DisplayName = "ClimbSuccess") bool UClimbActionComponent::TryAction(UMotionWarpingComponent* MotionWarping)
+UPARAM(DisplayName = "ClimbSuccess") bool UClimbActionComponent::TryAction()
 {
 	ACharacter* Character = Cast<ACharacter>(GetOwner());
 	if (Character == nullptr)
 	{
 		UE_LOG(ClimbComp, Warning, TEXT("Character is nullptr."));
+		
+		return false;
+	}
+	UMotionWarpingComponent* MotionWarpingComponent = Character->GetComponentByClass<UMotionWarpingComponent>();
+	if (MotionWarpingComponent == nullptr)
+	{
+		UE_LOG(ClimbComp, Warning, TEXT("MotionWarping is nullptr."));
+
 		return false;
 	}
 
@@ -69,13 +78,13 @@ UPARAM(DisplayName = "ClimbSuccess") bool UClimbActionComponent::TryAction(UMoti
 		return false;
 	}
 
-	Result = GraspWall(MotionWarping);
+	Result = GraspWall();
 	if (Result == false)
 	{
 		return false;
 	}
 
-	IsClimb = true;
+	bClimbing = true;
 	return true;
 }
 
@@ -147,13 +156,13 @@ void UClimbActionComponent::MoveAction(const FVector2D& InputValue)
 //----------------------------------------------------------------------//
 UPARAM(DisplayName = "CanselSuccess") bool UClimbActionComponent::CanselAction()
 {
-	if (IsClimb == false)
+	if (bClimbing == false)
 	{
 		return false;
 	}
 
 	//! Climb中のフラグを下ろし、MovementModeをFallingにして落下させる
-	IsClimb = false;
+	bClimbing = false;
 	ACharacter* Character = Cast<ACharacter>(GetOwner());
 	if (Character == nullptr)
 	{
@@ -179,7 +188,7 @@ float UClimbActionComponent::CalcMaxFlySpeed() const
 {
 	//! FlyMaxSpeedデフォルト値
 	float Speed = 600.0f;
-	if (IsClimb == false)
+	if (bClimbing == false)
 	{
 		return Speed;
 	}
@@ -251,19 +260,27 @@ void UClimbActionComponent::ResetVelocity()
 //----------------------------------------------------------------------//
 bool UClimbActionComponent::FindObjectInFront()
 {
-	//! 今のアクターの座標(Start)からアクターの前方方向ベクトル * 判定距離(End)までトレース
-	FVector ActorLocation = GetOwner()->GetActorLocation();
-	FVector ActorForwardVec = GetOwner()->GetActorForwardVector();
-	
 	//! CapsuleCompの情報取得
 	ACharacter* Character = Cast<ACharacter>(GetOwner());
 
 	float CapsuleRadius = Character->GetCapsuleComponent()->GetScaledCapsuleRadius();
 	float CapsuleHalfHeight = Character->GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
 
+	FVector ActorLocation = Character->GetActorLocation();
+	
+#if VELOCITY_JUDGE
+	//! Velocityの方向にトレース
+	FVector EndPoint = ActorLocation + Character->GetMovementComponent()->Velocity;
+#else
+	//! 今のアクターの座標(Start)からアクターの前方方向ベクトル * 判定距離(End)までトレース
+	FVector ActorForwardVec = Character->GetActorForwardVector();
+
+	FVector EndPoint = ActorLocation + (ActorForwardVec * TraceDistance);
+#endif
+
 	FHitResult HitResult = {};
 	bool Result = UKismetSystemLibrary::CapsuleTraceSingle(
-		GetWorld(), ActorLocation, ActorLocation + (ActorForwardVec * TraceDistance),
+		GetWorld(), ActorLocation, EndPoint,
 		CapsuleRadius, CapsuleHalfHeight,
 		TraceChannel, false, TArray<AActor*>(),
 		/*EDrawDebugTrace::ForDuration*/EDrawDebugTrace::None,
@@ -296,7 +313,7 @@ bool UClimbActionComponent::FindObjectInFront()
 //! @param MotionWarping MotionWarpingのコンポーネント
 //
 //----------------------------------------------------------------------//
-bool UClimbActionComponent::GraspWall(UMotionWarpingComponent* MotionWarping)
+bool UClimbActionComponent::GraspWall()
 {
 	ACharacter* Character = Cast<ACharacter>(GetOwner());
 
@@ -315,13 +332,9 @@ bool UClimbActionComponent::GraspWall(UMotionWarpingComponent* MotionWarping)
 	AnimInstance->Montage_Play(ClimbAnimMontage);
 
 	//! MotionWarpingで移動
-	if (MotionWarping == nullptr)
-	{
-		UE_LOG(ClimbComp, Warning, TEXT("MotionWarping is nullptr."));
-		return false;
-	}
+	UMotionWarpingComponent* MotionWarpingComponent = Character->GetComponentByClass<UMotionWarpingComponent>();
 	//! 衝突位置から腕が埋まらないよう調整(AdjustValue)
-	MotionWarping->AddOrUpdateWarpTargetFromLocationAndRotation(TargetName, ClimbTransform.GetLocation() + (ClimbWallNormal * AdjustValue), ClimbTransform.Rotator());
+	MotionWarpingComponent->AddOrUpdateWarpTargetFromLocationAndRotation(TargetName, ClimbTransform.GetLocation() + (ClimbWallNormal * AdjustValue), ClimbTransform.Rotator());
 
 	return true;
 }

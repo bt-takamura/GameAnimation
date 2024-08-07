@@ -70,6 +70,9 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category="GA|Animation|MotionMatching|MovementAnalysis", meta=(BlueprintThreadSafe))
 	bool JustTraversed() const ;
 
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "GA|Animation|MotionMatching|MovementAnalysis", meta = (BlueprintThreadSafe))
+	bool JustClimbed() const;
+
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category="GA|Animation|MotionMatching|Additive Lean", meta=(BlueprintThreadSafe))
 	FVector CalculateRelativeAccelerationAmount() const ;
 
@@ -222,6 +225,9 @@ public:
 
 	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category="GA|Trajectory")
 	FPoseSearchTrajectoryData TrajectoryGenerationDataMoving;
+
+	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category = "GA|Trajectory")
+	FPoseSearchTrajectoryData TrajectoryGenerationDataClimbing;
 
 	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category="GA|Trajectory")
 	FPoseSearchQueryTrajectory Trajectory;
