@@ -35,7 +35,46 @@ void UMMLocomotionComponent::BeginPlay()
 	Super::BeginPlay();
 
 	// ...
-	
+
+	//! 落下時のイベント関数を追加
+	ACharacter* Character = GetOwner<ACharacter>();
+	if (Character != nullptr)
+	{
+		Character->LandedDelegate.AddDynamic(this, &UMMLocomotionComponent::OnLandedDelegate);
+	}
+}
+
+//----------------------------------------------------------------------//
+//
+//! @brief 着地時の処理、デリゲートに追加する関数
+//
+//! @param Hit	着地を示す結果
+//
+//----------------------------------------------------------------------//
+void UMMLocomotionComponent::OnLandedDelegate(const FHitResult& Hit)
+{
+	ACharacter* Character = GetOwner<ACharacter>();
+	if (Character == nullptr)
+	{
+		return;
+	}
+
+	LandSpeed = Character->GetCharacterMovement()->Velocity;
+
+	bJustLanded = true;
+
+	FTimerManager& TimerManager = GetWorld()->GetTimerManager();
+	TimerManager.SetTimer(TimerHandle, this, &UMMLocomotionComponent::TurnOffJustLandded, 0.3f, false);
+}
+
+//----------------------------------------------------------------------//
+//
+//! @brief 直前に着地したフラグを下す、SetTimer関数で0.3秒後に呼び出す関数
+//
+//----------------------------------------------------------------------//
+void UMMLocomotionComponent::TurnOffJustLandded()
+{
+	bJustLanded = false;
 }
 
 
@@ -46,6 +85,17 @@ void UMMLocomotionComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 
 	// ...
 
+}
+
+void UMMLocomotionComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	Super::EndPlay(EndPlayReason);
+
+	//! タイマーの解放
+	FTimerManager& TimerManager = GetWorld()->GetTimerManager();
+
+	TimerManager.ClearTimer(TimerHandle);
+	TimerManager.ClearAllTimersForObject(this);
 }
 
 //----------------------------------------------------------------------//

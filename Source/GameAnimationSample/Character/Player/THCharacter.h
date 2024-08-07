@@ -85,15 +85,6 @@ private:
 	void UpdateCamera(bool bInterpolate);
 	//! @}
 
-	//! @{@name 着地時の処理
-	UFUNCTION()
-	void OnLandedDelegate(const FHitResult& Hit);
-	//! @}
-	
-	//! @{@name 着地フラグを下す
-	void TurnOffJustLandded();
-	//! @}
-
 	//!< スプリングアームコンポーネント
 	UPROPERTY(EditDefaultsOnly, Category = "TH | Default")
 	TObjectPtr<USpringArmComponent> SpringArmComponent = nullptr;
@@ -117,9 +108,6 @@ private:
 	//!< カメラ距離の大きさ
 	UPROPERTY(EditDefaultsOnly, Category = "TH | Camera")
 	float CameraDistanceMag = 1.0f;
-
-	//!< タイマー用のハンドル
-	FTimerHandle TimerHandle;
 
 	//!< クライム(よじ登る)アクション機能のコンポーネント
 	UPROPERTY(EditDefaultsOnly, Category = "TH | Climb")

@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Character/Base/SNCharacterBase.h"
+#include "Character/Base/SNPlayerBase.h"
 #include "MotionMatcingCharacterBase.generated.h"
 
 class UMMLocomotionComponent;

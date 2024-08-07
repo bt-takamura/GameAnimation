@@ -110,6 +110,8 @@ public:
 
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
+
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	
 	//! @{@name 歩幅状態の取得
 	EStride GetStride()const;
@@ -199,6 +201,17 @@ protected:
 	virtual void BeginPlay() override;
 
 private:
+	//! @{@name 着地時の処理
+	UFUNCTION()
+	void OnLandedDelegate(const FHitResult& Hit);
+	//! @}
+
+	//! @{@name 着地フラグを下す
+	void TurnOffJustLandded();
+	//! @}
+
+
+
 	//! @{@name 進行方向にBlockがあるかチェック
 	bool PerformForwardBlocks(FTraversalCheckResult& TraversalCheckResult, float TraceForwardDistance, int DrawDebugLevel, float DrawDebugDuration);
 	//! @}
@@ -309,6 +322,9 @@ private:
 	//!< 着地速度
 	UPROPERTY(EditDefaultsOnly, Category = "MMLocomotion | Movement", meta = (BlueprintThreadSafe))
 	FVector LandSpeed = FVector::ZeroVector;
+
+	//!< タイマー用のハンドル
+	FTimerHandle TimerHandle;
 
 
 
