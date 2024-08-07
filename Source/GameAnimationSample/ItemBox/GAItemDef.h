@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -33,6 +33,12 @@ USTRUCT(BlueprintType)
 struct FItemData : public FTableRowBase
 {
 	GENERATED_USTRUCT_BODY()
+
+	UPROPERTY(EditAnywhere, Category = "ItemBox", DisplayName = "スコア最小値")
+	int ScoreMin = 0;
+
+	UPROPERTY(EditAnywhere, Category = "ItemBox", DisplayName = "スコア最大値")
+	int ScoreMax = 100;
 	
 	UPROPERTY(EditAnywhere, Category = "ItemBox", DisplayName = "アイテムボックスの設定")
 	TArray<FItemElement> Items;
