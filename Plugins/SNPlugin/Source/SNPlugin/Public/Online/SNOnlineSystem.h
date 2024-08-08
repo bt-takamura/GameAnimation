@@ -14,23 +14,31 @@
 
 #include "SNOnlineSystem.generated.h"
 
+class ISNOnlineSystemInterface;
 class IOnlineSubsystem;
+class USNOnlineHostSessionRequest;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FSNCompleteHostSession, FName, InSessionName, bool, bWasSuccessful);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FSNCompleteFindSession, bool, bWasSuccessful);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FSNCompleteJoinSession, FName, InSessionName, bool, bResult);
 
-/**
- * 
- */
+//!@{@defgroup オンライン
+//!@{
+//----------------------------------------------------------------------//
+//
+//! @brief オンライン処理
+//
+//----------------------------------------------------------------------//
 UCLASS(Blueprintable)
 class SNPLUGIN_API USNOnlineSystem : public UObject
 {
 	GENERATED_BODY()
 
 public:
-
+	
+	//! @{@name 初期化処理
 	void Initialize();
+	//! @}
 	
 	//! @{@name ログイン処理
 	void Login();
@@ -45,7 +53,7 @@ public:
 	//! @}
 	
 	//! @{@name セッションに参加
-	void JoinSession(FOnlineSessionSearchResult SearchResult);
+	void JoinSession(const FOnlineSessionSearchResult& SearchResult);
 	//! @}
 	
 	//! @{@name セッションを終了
@@ -62,6 +70,10 @@ public:
 	
 	//! @{@name 別マップへの移動処理
 	void MapTravel(const FString& MapName);
+	//! @}
+	
+	//! @{@name 既にログイン済みかどうかチェック
+	bool IsLoggedIn() const ;
 	//! @}
 	
 	const TSharedPtr<class FOnlineSessionSearch>& GetSearchSessionList() const ;
@@ -98,26 +110,14 @@ private:
 	UFUNCTION(NetMulticast, Reliable)
 	void MapTravel_OnMulticast();
 	
-	UPROPERTY(EditAnywhere, Category="Online")
-	bool bShouldIdAdvertise = true;
+	UPROPERTY(EditAnywhere, Category="Online|HostSession")
+	TSoftClassPtr<USNOnlineHostSessionRequest> HostSessionRequestClass = nullptr;
 	
-	UPROPERTY(EditAnywhere, Category="Online")
-	bool bAllowJoinInProgress = true;
+	UPROPERTY()
+	TObjectPtr<USNOnlineHostSessionRequest> HostSessionRequest = nullptr;
 	
-	UPROPERTY(EditAnywhere, Category="Online")
-	bool bAllowInvites = true;
-	
-	UPROPERTY(EditAnywhere, Category="Online")
-	bool bUsesPresence = true;
-	
-	UPROPERTY(EditAnywhere, Category="Online")
-	bool bAllowJoinViaPresense =true;
-	
-	UPROPERTY(EditAnywhere, Category="Online")
-	bool bUseLobbiesIfAvailable = true;
-	
-	UPROPERTY(EditAnywhere, Category="Online")
-	bool bUseLobbiesVoiceChatIfAvailable = true;
+	UPROPERTY()
+	TScriptInterface<ISNOnlineSystemInterface> OnlineImpl = nullptr;
 	
 	UPROPERTY()
 	FString ConnectURL = TEXT("");
@@ -142,3 +142,5 @@ FORCEINLINE const FString& USNOnlineSystem::GetConnectURL() const
 {
 	return ConnectURL;
 }
+//! @}
+//! @}

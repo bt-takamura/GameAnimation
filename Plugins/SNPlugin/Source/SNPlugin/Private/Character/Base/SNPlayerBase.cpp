@@ -4,6 +4,7 @@
 #include "SNDef.h"
 #include "Utility/SNUtility.h"
 #include "Character/SNPlayerController.h"
+#include "Online/SNOnlineSystem.h"
 
 void ASNPlayerBase::NotifyRestarted()
 {
@@ -17,5 +18,12 @@ void ASNPlayerBase::NotifyRestarted()
 		PlayerController->InitializeInput();
 		
 		SNPLUGIN_LOG(TEXT("Setup Player Input Component."));
+
+		USNOnlineSystem* OnlineSystem(SNUtility::GetOnlineSystem<USNOnlineSystem>());
+
+		if(OnlineSystem != nullptr)
+		{
+			OnlineSystem->Login();
+		}
 	}
 }

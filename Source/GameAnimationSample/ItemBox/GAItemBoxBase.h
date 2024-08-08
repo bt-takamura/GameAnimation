@@ -48,6 +48,10 @@ public:
 	//! @{@name アイテムタイプの取得
 	EItemType GetItemType() const ;
 	//! @}
+
+	bool IsOpening() const ;
+
+	bool IsOpened() const ;
 	
 protected:
 	
@@ -73,11 +77,11 @@ private:
 	
 	//!< 1度でも開いたかどうかのフラグ
 	UPROPERTY()
-	bool IsOpened = false;
+	bool bIsOpened = false;
 	
 	//!< 現在開いている最中かどうかのフラグ
 	UPROPERTY()
-	bool IsOpening = false;
+	bool bIsOpening = false;
 	
 	//!< 中に入っているアイテムのタイプ
 	UPROPERTY()
@@ -137,3 +141,14 @@ FORCEINLINE void AGAItemBoxBase::SetItemType(EItemType Type){
 FORCEINLINE EItemType AGAItemBoxBase::GetItemType() const {
 	return ItemType;
 }
+
+FORCEINLINE bool AGAItemBoxBase::IsOpened() const
+{
+	return bIsOpened;
+}
+
+FORCEINLINE bool AGAItemBoxBase::IsOpening() const
+{
+	return bIsOpening;
+}
+

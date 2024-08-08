@@ -10,6 +10,9 @@
 #include "Online/OnlineSessionNames.h"
 #include "OnlineSessionClient.h"
 #include "OnlineSessionSettings.h"
+#include "Online/SNOnlineCommonSetting.h"
+#include "Online/SNOnlineSystemEOSV1.h"
+#include "Online/SNOnlineSystemNull.h"
 
 
 //----------------------------------------------------------------------//
@@ -26,6 +29,7 @@ void USNOnlineSystem::Login(){
 	IOnlineIdentityPtr Identity(OnlineSubsystem->GetIdentityInterface());
 	// OnlineIdentityが有効なものかチェック
 	if(Identity.IsValid()){
+		
 		// プレイヤーコントローラを取得
 		APlayerController* PlayerController(SNUtility::GetPlayerController<APlayerController>());
 		
@@ -37,43 +41,32 @@ void USNOnlineSystem::Login(){
 			// コントローラIDを取得
 			int Id = LocalPlayer->GetControllerId();
 			
-			if(Identity->GetLoginStatus(Id) != ELoginStatus::LoggedIn){
-
-				
-				//FOnlineAccountCredentials Credentials(TEXT("persistentauth"), TEXT(""), TEXT(""));
-				FOnlineAccountCredentials Credentials(TEXT("AccountPortal"), TEXT(""), TEXT(""));
-				//FOnlineAccountCredentials Credentials(TEXT("Developer"), TEXT("localhost:8080"), TEXT("Satoshi"));
-				
-				SNPLUGIN_WARNING(TEXT("CommandLine : %s"), FCommandLine::Get());
-
-				FName t0;
-				FName t1;
-				FName t2;
-
-				//FCommandLine::Set(TEXT("AUTH_TYPE=Developer"));
-				//FCommandLine::Set(TEXT("AUTH_LOGIN=localhost:8080"));
-				//FCommandLine::Set(TEXT("AUTH_PASSWORD=Satoshi"));
-
-				//FParse::Value(FCommandLine::Get(), TEXT("AUTH_TYPE="), t0);
-				//FParse::Value(FCommandLine::Get(), TEXT("AUTH_LOGIN="), t1);
-				//FParse::Value(FCommandLine::Get(), TEXT("AUTH_PASSWORD="), t2);
-				
-				
-				SNPLUGIN_LOG(TEXT("CommandLine : %s"), FCommandLine::Get());
-				
-				Identity->AddOnLoginCompleteDelegate_Handle(Id, FOnLoginCompleteDelegate::CreateUObject(this, &USNOnlineSystem::OnLoginComplete));
-				
-				//Identity->AutoLogin(Id);
-
-				Identity->Login(Id, Credentials);
-				
-			}
-			
-			ELoginStatus::Type Status = Identity->GetLoginStatus(Id);
-			
-			SNPLUGIN_LOG(TEXT("Login Status : %s"), ELoginStatus::ToString(Status));
+			Identity->AddOnLoginCompleteDelegate_Handle(Id, FOnLoginCompleteDelegate::CreateUObject(this, &USNOnlineSystem::OnLoginComplete));
 		}
+		
+		OnlineImpl->Login(Identity);
 	}
+}
+
+//----------------------------------------------------------------------//
+//
+//! @brief ログイン済みかどうかチェック
+//
+//! @param Identity 認証インターフェイス
+//
+//! @retval true  ログイン済み
+//! @retval false 未ログイン
+//
+//----------------------------------------------------------------------//
+bool USNOnlineSystem::IsLoggedIn() const {
+	
+	IOnlineSubsystem* OnlineSubsystem(Online::GetSubsystem(GetWorld()));
+	
+	SNPLUGIN_ASSERT(OnlineSubsystem != nullptr, TEXT("OnlineSubsystem is nullptr"));
+	
+	IOnlineIdentityPtr Identity(OnlineSubsystem->GetIdentityInterface());
+	
+	return OnlineImpl->IsLoggedIn(Identity);
 }
 
 //----------------------------------------------------------------------//
@@ -85,60 +78,32 @@ void USNOnlineSystem::Login(){
 //
 //----------------------------------------------------------------------//
 bool USNOnlineSystem::HostSession(int ConnectionNum, FName Name){
+	// リクエストが設定されていない場合は処理を終了
+	if(HostSessionRequest == nullptr){
+		
+		SNPLUGIN_ERROR(TEXT("Host Session Request is nullptr."));
+		
+		return false;
+	}
+	
+	bool Result = false;
 	
 	IOnlineSubsystem* const OnlineSubsystem = Online::GetSubsystem(GetWorld());
 	
 	SNPLUGIN_ASSERT(OnlineSubsystem != nullptr, TEXT("OnlineSubsystem is nullptr"));
-
+	
 	IOnlineSessionPtr Sessions = OnlineSubsystem->GetSessionInterface();
 	
 	if(Sessions.IsValid()){
 		
-		TSharedPtr<class FOnlineSessionSettings> SessionSettings(MakeShareable(new FOnlineSessionSettings()));
-		
-		SNPLUGIN_ASSERT(SessionSettings != nullptr, TEXT("Failed to allocate Session Settings."));
-		// 生成するセッションの設定
-		SessionSettings->NumPublicConnections			= ConnectionNum;
-		SessionSettings->NumPrivateConnections			= 0;
-		SessionSettings->bIsLANMatch					= false;
-		SessionSettings->bShouldAdvertise				= bShouldIdAdvertise;
-		SessionSettings->bAllowJoinInProgress			= bAllowJoinInProgress;
-		SessionSettings->bAllowInvites					= bAllowInvites;
-		SessionSettings->bUsesPresence					= bUsesPresence;
-		SessionSettings->bAllowJoinViaPresence			= bAllowJoinViaPresense;
-		SessionSettings->bUseLobbiesIfAvailable			= bUseLobbiesIfAvailable;
-		SessionSettings->bUseLobbiesVoiceChatIfAvailable= bUseLobbiesVoiceChatIfAvailable;
-		
-		SessionSettings->Set(SEARCH_KEYWORDS, Name.ToString(), EOnlineDataAdvertisementType::ViaOnlineService);
+		HostSessionRequest->MaxPlayerNum = ConnectionNum;
 		
 		Sessions->AddOnCreateSessionCompleteDelegate_Handle(FOnCreateSessionCompleteDelegate::CreateUObject(this, &USNOnlineSystem::OnCreateSessionComplete));
-		// プレイヤーコントローラを取得
-		APlayerController* PlayerController(SNUtility::GetPlayerController<APlayerController>());
-		// プレイヤーコントローラがない場合はアサート
-		SNPLUGIN_ASSERT(PlayerController != nullptr, TEXT("PlayerController is nullptr"));
 		
-		TSharedPtr<const FUniqueNetId> UniqueNetIdPtr(SNUtility::GetUniqueNetId(PlayerController));
-		// ネットワームIDが有効かチェック
-		if(UniqueNetIdPtr.IsValid()){
-			
-			bool bResult = Sessions->CreateSession(*UniqueNetIdPtr, Name, *SessionSettings);
-			
-			if(bResult == true){
-				
-				SNPLUGIN_LOG(TEXT("Success to Create Session."))
-
-				MaxPlayerNum = ConnectionNum;
-				
-				return true;
-			} else {
-				SNPLUGIN_ERROR(TEXT("CreateSession: Fail"));
-			}
-		} else {
-			SNPLUGIN_ERROR(TEXT("CreateSession : Unique Net Id is none."))
-		}
+		Result = OnlineImpl->HostSession(Sessions, HostSessionRequest, Name);
 	}
 	
-	return false;
+	return Result;
 }
 
 //----------------------------------------------------------------------//
@@ -159,33 +124,33 @@ void USNOnlineSystem::FindSession(){
 		SearchSettings = MakeShareable(new FOnlineSessionSearch());
 		
 		SNPLUGIN_ASSERT(SearchSettings != nullptr, TEXT("Failed to allocate Session Search Settings."));
-
-		SearchSettings->SearchResults.Empty();
-		
-		SearchSettings->QuerySettings.Set(SEARCH_PRESENCE, true, EOnlineComparisonOp::Equals);
-		SearchSettings->QuerySettings.Set(SEARCH_LOBBIES, true, EOnlineComparisonOp::Equals);
 		
 		Sessions->AddOnFindSessionsCompleteDelegate_Handle(FOnFindSessionsCompleteDelegate::CreateUObject(this, &USNOnlineSystem::OnFindSessionsComplete));
+		
+		OnlineImpl->FindSession(Sessions, SearchSettings);
+	}
+}
 
-		TSharedRef<FOnlineSessionSearch> SearchSettingsRef = SearchSettings.ToSharedRef();
-		// プレイヤーコントローラを取得
-		APlayerController* PlayerController(SNUtility::GetPlayerController<APlayerController>());
+//----------------------------------------------------------------------//
+//
+//! @brief セッションに参加
+//
+//! @param SearchResult 参加するセッションの検索結果
+//
+//----------------------------------------------------------------------//
+void USNOnlineSystem::JoinSession(const FOnlineSessionSearchResult& SearchResult){
+	
+	IOnlineSubsystem* const OnlineSubsystem = Online::GetSubsystem(GetWorld());
+	
+	if(OnlineSubsystem != nullptr){
 		
-		SNPLUGIN_ASSERT(PlayerController != nullptr, TEXT("PlayerController is nullptr"));
+		IOnlineSessionPtr Sessions(OnlineSubsystem->GetSessionInterface());
 		
-		TSharedPtr<const FUniqueNetId> UniqueNetIdPtr(SNUtility::GetUniqueNetId(PlayerController));
-		
-		if(UniqueNetIdPtr.IsValid()){
-			// セッションの検索を開始
-			bool bResult = Sessions->FindSessions(*UniqueNetIdPtr, SearchSettingsRef);
+		if(Sessions.IsValid()){
 			
-			if(bResult == true){
-				SNPLUGIN_LOG(TEXT("Success to FindSession."))
-			} else {
-				SNPLUGIN_ERROR(TEXT("FindSession: Fail"));
-			}
-		} else {
-			SNPLUGIN_ERROR(TEXT("FindSession : Unique Net Id is none."))
+			Sessions->AddOnJoinSessionCompleteDelegate_Handle(FOnJoinSessionCompleteDelegate::CreateUObject(this, &USNOnlineSystem::OnJoinSessionComplete));
+			
+			OnlineImpl->JoinSession(Sessions, SearchResult);
 		}
 	}
 }
@@ -205,7 +170,7 @@ void USNOnlineSystem::KillSession(const FName& SessionName){
 	
 	if(Sessions.IsValid()){
 		// セッションを終了
-		Sessions->DestroySession(SessionName);
+		OnlineImpl->KillSession(Sessions, SessionName);
 		
 		ConnectURL = TEXT("");
 	}
@@ -311,55 +276,6 @@ void USNOnlineSystem::OnFindSessionsComplete(bool bWasSuccessful){
 	}
 }
 
-//----------------------------------------------------------------------//
-//
-//! @brief セッションに参加
-//
-//! @param SearchResult 参加するセッションの検索結果
-//
-//----------------------------------------------------------------------//
-void USNOnlineSystem::JoinSession(FOnlineSessionSearchResult SearchResult){
-	
-	IOnlineSubsystem* const OnlineSubsystem = Online::GetSubsystem(GetWorld());
-	
-	if(OnlineSubsystem != nullptr){
-		
-		IOnlineSessionPtr Sessions(OnlineSubsystem->GetSessionInterface());
-		
-		if(Sessions.IsValid()){
-			
-			if(SearchResult.IsValid()){
-				
-				Sessions->AddOnJoinSessionCompleteDelegate_Handle(FOnJoinSessionCompleteDelegate::CreateUObject(this, &USNOnlineSystem::OnJoinSessionComplete));
-				
-				APlayerController* PlayerController(SNUtility::GetPlayerController<APlayerController>());
-				
-				SNPLUGIN_ASSERT(PlayerController != nullptr, TEXT("PlayerController is nullptr"));
-				
-				TSharedPtr<const FUniqueNetId> UniqueNetIdPtr(SNUtility::GetUniqueNetId(PlayerController));
-				
-				if(UniqueNetIdPtr.IsValid()){
-					
-					FName JoinSessionName(NAME_None);
-					// 検索結果にキーワードが含まれているかチェック
-					if(SearchResult.Session.SessionSettings.Settings.Contains(SEARCH_KEYWORDS) == true){
-						// オンライン設定を取得
-						const FOnlineSessionSetting& Setting(SearchResult.Session.SessionSettings.Settings[SEARCH_KEYWORDS]);
-						// データからセッション名を取得
-						JoinSessionName = *Setting.Data.ToString();
-					}
-					// セッションに参加
-					Sessions->JoinSession(*UniqueNetIdPtr, JoinSessionName, SearchResult);
-				} else {
-					SNPLUGIN_ERROR(TEXT("JointSession : Unique Net Id is none."))
-				}
-			} else {
-				SNPLUGIN_ERROR(TEXT("Invalid session."));
-			}
-		}
-	}
-}
-
 void USNOnlineSystem::OnJoinSessionComplete(FName InSessionName, EOnJoinSessionCompleteResult::Type Result){
 	
 	IOnlineSubsystem* const OnlineSubsystem = Online::GetSubsystem(GetWorld());
@@ -398,6 +314,31 @@ void USNOnlineSystem::OnJoinSessionComplete(FName InSessionName, EOnJoinSessionC
 //----------------------------------------------------------------------//
 void USNOnlineSystem::Initialize(){
 	
+	if(HostSessionRequestClass.IsNull() == false){
+		// クラス情報をロード
+		UClass* Class(HostSessionRequestClass.LoadSynchronous());
+		
+		SNPLUGIN_ASSERT(Class != nullptr, TEXT("Host Session Request Class is nullptr."));
+		// ホスト生成リクエスト設定をロード
+		HostSessionRequest = NewObject<USNOnlineHostSessionRequest>(this, Class, TEXT("HostSessionRequest"));
+	}
+	
+	IOnlineSubsystem* const OnlineSubsystem = Online::GetSubsystem(GetWorld());
+	
+	SNPLUGIN_ASSERT(OnlineSubsystem != nullptr, TEXT("OnlineSubsystem is nullptr"));
+	
+	FName PlatformName(OnlineSubsystem->GetSubsystemName());
+	
+	if(PlatformName == TEXT("NULL")){
+		OnlineImpl = NewObject<USNOnlineSystemNull>();
+	} else
+	if(PlatformName == TEXT("EOS")){
+#if COMMONUSER_OSSV1
+		OnlineImpl = NewObject<USNOnlineSystemEOSV1>();
+#else
+		
+#endif
+	}
 }
 
 //----------------------------------------------------------------------//

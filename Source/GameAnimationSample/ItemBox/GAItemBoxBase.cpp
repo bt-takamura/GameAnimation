@@ -53,7 +53,7 @@ void AGAItemBoxBase::OpenRequest(){
 		return;
 	}
 	// 現在すでに開いている場合は処理を呼ばない
-	if(IsOpening == true){
+	if(bIsOpening == true){
 		return;
 	}
 	
@@ -67,7 +67,7 @@ void AGAItemBoxBase::OpenRequest(){
 		UGameplayStatics::PlaySoundAtLocation(GetWorld(), Cast<USoundBase>(OpenSound), GetActorLocation(), GetActorRotation());	
 	}
 	// オープン中フラグをON
-	IsOpening = true;
+	bIsOpening = true;
 }
 
 //----------------------------------------------------------------------//
@@ -84,7 +84,7 @@ void AGAItemBoxBase::CloseRequest(){
 		return;
 	}
 	// 現在すでに閉じている場合は処理を呼ばない
-	if(IsOpening == false){
+	if(bIsOpening == false){
 		return;
 	}
 	
@@ -139,9 +139,9 @@ void AGAItemBoxBase::Close(){
 		// タイマーをクリア
 		GetWorldTimerManager().ClearTimer(TimerHandle);;
 		// 開封済みに設定
-		IsOpened = true;
+		bIsOpened = true;
 		// 閉じた状態に設定
-		IsOpening = false;
+		bIsOpening = false;
 		// ハンドルを無効化
 		TimerHandle.Invalidate();
 	}
