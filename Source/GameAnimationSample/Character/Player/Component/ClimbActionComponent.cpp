@@ -13,7 +13,6 @@
 #include "KismetAnimationLibrary.h"
 
 DEFINE_LOG_CATEGORY(ClimbComp);
-#define VELOCITY_JUDGE 1
 
 // Sets default values for this component's properties
 UClimbActionComponent::UClimbActionComponent(const FObjectInitializer& Initializer)
@@ -36,13 +35,20 @@ void UClimbActionComponent::BeginPlay()
 	
 }
 
-
 // Called every frame
 void UClimbActionComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
 	// ...
+	ACharacter* Character = GetOwner<ACharacter>();
+	if (Character != nullptr)
+	{
+		//! 飛行モードの移動速度を更新(クライムアクションで移動するため)
+		Character->GetCharacterMovement()->MaxFlySpeed = CalcMaxFlySpeed();
+
+		UpdateRotation();
+	}
 }
 
 //----------------------------------------------------------------------//
@@ -226,14 +232,15 @@ float UClimbActionComponent::CalcMaxFlySpeed() const
 //! @brief Climb中のCharacterの回転設定
 //
 //----------------------------------------------------------------------//
-void UClimbActionComponent::SetClimbRotation() const
+void UClimbActionComponent::UpdateRotation() const
 {
-	ACharacter* Character = Cast<ACharacter>(GetOwner());
-	if (Character == nullptr)
+	//! クライム中でなければ設定を更新しない
+	if (bClimbing == false)
 	{
-		UE_LOG(ClimbComp, Warning, TEXT("Character is nullptr."));
 		return;
 	}
+
+	ACharacter* Character = Cast<ACharacter>(GetOwner());
 	Character->GetCharacterMovement()->bUseControllerDesiredRotation = false;
 	Character->GetCharacterMovement()->bOrientRotationToMovement = false;
 }

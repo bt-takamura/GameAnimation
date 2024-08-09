@@ -9,6 +9,7 @@
 class UMotionWarpingComponent;
 
 DECLARE_LOG_CATEGORY_EXTERN(ClimbComp, Log, All);
+#define VELOCITY_JUDGE 1
 
 /**
  *	クライム(よじ登る)アクションの処理
@@ -52,7 +53,7 @@ public:
 
 	//! @{@name Climb中のCharacterの回転設定
 	UFUNCTION(BlueprintCallable)
-	void SetClimbRotation() const;
+	void UpdateRotation() const;
 	//! @}
 	
 	//! @{@name
@@ -97,11 +98,12 @@ private:
 	void GoUp();
 	//! @}
 
-
+#if VELOCITY_JUDGE
+#else
 	//!< トレース判定する距離
-	UPROPERTY(EditDefaultsOnly, Category = "Trace")
+	//UPROPERTY(EditDefaultsOnly, Category = "Trace")
 	float TraceDistance = 50.0f;
-
+#endif
 	//!< トレースするタイプ
 	UPROPERTY(EditDefaultsOnly, Category = "Trace")
 	TEnumAsByte<ETraceTypeQuery> TraceChannel = ETraceTypeQuery::TraceTypeQuery1;

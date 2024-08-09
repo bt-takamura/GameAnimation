@@ -209,6 +209,10 @@ private:
 	//! @{@name 着地フラグを下す
 	void TurnOffJustLandded();
 	//! @}
+	
+	//! @{@name Characterの回転設定を更新
+	void UpdateRotation();
+	//! @} 
 
 
 
@@ -320,7 +324,7 @@ private:
 	FVector SprintSpeed = FVector::ZeroVector;
 
 	//!< 着地速度
-	UPROPERTY(EditDefaultsOnly, Category = "MMLocomotion | Movement", meta = (BlueprintThreadSafe))
+	UPROPERTY(meta = (BlueprintThreadSafe))
 	FVector LandSpeed = FVector::ZeroVector;
 
 	//!< タイマー用のハンドル

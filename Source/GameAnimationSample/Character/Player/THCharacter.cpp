@@ -95,24 +95,6 @@ void ATHCharacter::BeginPlay()
 	}
 }
 
-void ATHCharacter::UpdateMovement()
-{
-	Super::UpdateMovement();
-
-	//! 飛行モードの移動速度を更新(クライムアクションで移動するため)
-	GetCharacterMovement()->MaxFlySpeed = ClimbActionComponent->CalcMaxFlySpeed();
-}
-
-void ATHCharacter::UpdateRotation()
-{
-	Super::UpdateRotation();
-	
-	if (ClimbActionComponent->IsClimbing() == true)
-	{
-		ClimbActionComponent->SetClimbRotation();
-	}
-}
-
 void ATHCharacter::UpdateCamera(bool bInterpolate)
 {
 	FCameraParams* CameraParams = nullptr;

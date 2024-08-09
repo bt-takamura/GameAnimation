@@ -66,19 +66,15 @@ public:
 	UClimbActionComponent* GetClimbActionComponent() const;
 	//! @}
 
-	//! IClimbActionInterface
+	//! @note IClimbActionInterface
 	virtual void SetClimbGraspTransform(FHitResult& HitResult, FTransform& OutTransform) override;
 
-	//! IClimbActionInterface
+	//! @note IClimbActionInterface
 	virtual void ClimbMove(const FVector2D& InputValue) override;
 
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
-
-	virtual void UpdateMovement() override;
-
-	virtual void UpdateRotation() override;
 
 private:
 	//! @{@name カメラの更新

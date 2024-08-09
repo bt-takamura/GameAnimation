@@ -77,6 +77,33 @@ void UMMLocomotionComponent::TurnOffJustLandded()
 	bJustLanded = false;
 }
 
+void UMMLocomotionComponent::UpdateRotation()
+{
+	ACharacter* Character = GetOwner<ACharacter>();
+	UCharacterMovementComponent* CharacterMovementComp = Character->GetCharacterMovement();
+	if (bWantsToStrafe == true)
+	{
+		CharacterMovementComp->bUseControllerDesiredRotation = true;
+
+		CharacterMovementComp->bOrientRotationToMovement = false;
+	}
+	else
+	{
+		CharacterMovementComp->bUseControllerDesiredRotation = false;
+
+		CharacterMovementComp->bOrientRotationToMovement = true;
+	}
+
+	if (CharacterMovementComp->IsFalling() == true)
+	{
+		CharacterMovementComp->RotationRate = FRotator(0.0f, 200.0f, 0.0f);
+	}
+	else
+	{
+		CharacterMovementComp->RotationRate = FRotator(0.0f, -1.0f, 0.0f);
+	}
+}
+
 
 // Called every frame
 void UMMLocomotionComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
@@ -84,7 +111,13 @@ void UMMLocomotionComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
 	// ...
+	ACharacter* Character = GetOwner<ACharacter>();
+	if (Character != nullptr)
+	{
+		Character->GetCharacterMovement()->MaxWalkSpeed = CalculateMaxSpeed();
 
+		UpdateRotation();
+	}
 }
 
 void UMMLocomotionComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)

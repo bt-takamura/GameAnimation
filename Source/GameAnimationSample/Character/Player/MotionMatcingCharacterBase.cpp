@@ -31,9 +31,6 @@ void AMotionMatcingCharacterBase::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	UpdateMovement();
-
-	UpdateRotation();
 }
 
 // Called to bind functionality to input
@@ -43,34 +40,3 @@ void AMotionMatcingCharacterBase::SetupPlayerInputComponent(UInputComponent* Pla
 
 }
 
-void AMotionMatcingCharacterBase::UpdateMovement()
-{
-	//! 移動速度を設定
-	GetCharacterMovement()->MaxWalkSpeed = MMLocomotionComponent->CalculateMaxSpeed();
-}
-
-void AMotionMatcingCharacterBase::UpdateRotation()
-{
-	UCharacterMovementComponent* CharacterMovementComp = GetCharacterMovement();
-	if (MMLocomotionComponent->GetWantsToStrafe() == true)
-	{
-		CharacterMovementComp->bUseControllerDesiredRotation = true;
-
-		CharacterMovementComp->bOrientRotationToMovement = false;
-	}
-	else
-	{
-		CharacterMovementComp->bUseControllerDesiredRotation = false;
-
-		CharacterMovementComp->bOrientRotationToMovement = true;
-	}
-
-	if (CharacterMovementComp->IsFalling() == true)
-	{
-		CharacterMovementComp->RotationRate = FRotator(0.0f, 200.0f, 0.0f);
-	}
-	else
-	{
-		CharacterMovementComp->RotationRate = FRotator(0.0f, -1.0f, 0.0f);
-	}
-}

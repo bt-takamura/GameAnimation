@@ -39,14 +39,6 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
-	//! @{@name 移動速度を更新
-	virtual void UpdateMovement();
-	//! @}
-
-	//! @{@name 回転設定を更新
-	virtual void UpdateRotation();
-	//! @}
-	 
 private:	
 	//!< モーションワーピングコンポーネント
 	UPROPERTY(EditDefaultsOnly, Category = "MM | Default")
